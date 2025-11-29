@@ -1,39 +1,102 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 
-export function useFilters(productos) {
-  const [filtros, setFiltros] = useState({});
-  const [productosFiltrados, setProductosFiltrados] = useState(productos);
+export function useFilters(products, subcategories = [], category = "general") {
+  const defaultState = "all";
 
-  useEffect(() => {
-    let resultado = [...productos];
+  // ------------------------
+  // CALCULAR PRECIO MÁXIMO REAL
+  // ------------------------
+  const precioMaxReal = useMemo(() => {
+    if (!products || products.length === 0) return 15000;
+    return Math.max(...products.map(p => p.price || 0));
+  }, [products]);
 
-    Object.keys(filtros).forEach(key => {
-      if (!filtros[key] && filtros[key] !== 0) return;
+  const [precioMax, setPrecioMax] = useState(precioMaxReal);
+  const [subcategoriaSeleccionada, setSubcategoriaSeleccionada] = useState(defaultState);
+  const [marcaSeleccionada, setMarcaSeleccionada] = useState(defaultState);
+  const [busqueda, setBusqueda] = useState("");
+  const [orden, setOrden] = useState("asc");
 
-      if (key === "maxPrecio") {
-        resultado = resultado.filter(p => p.precio <= Number(filtros[key]));
-      } else {
-        resultado = resultado.filter(p => String(p[key]).toLowerCase() === String(filtros[key]).toLowerCase());
-      }
+  // ------------------------
+  // FILTROS DINÁMICOS (Specs)
+  // ------------------------
+  const specsKeys = useMemo(() => {
+    const keys = new Set();
+    products.forEach(p => {
+      Object.keys(p.specs || {}).forEach(k => keys.add(k));
     });
+    return Array.from(keys);
+  }, [products]);
 
-    setProductosFiltrados(resultado);
-  }, [filtros, productos]);
+  const [specsFilters, setSpecsFilters] = useState(
+    specsKeys.reduce((acc, key) => ({ ...acc, [key]: defaultState }), {})
+  );
 
-  const aplicarFiltro = (key, value) => {
-    setFiltros(prev => ({ ...prev, [key]: value }));
-  };
+  // ------------------------
+  // OPCIONES DINÁMICAS
+  // ------------------------
+  const marcas = useMemo(
+    () => [...new Set(products.map(p => p.specs?.marca).filter(Boolean))].sort(),
+    [products]
+  );
 
+  const specsUnicos = useMemo(() => {
+    const mapear = (key) =>
+      [...new Set(products.map(p => p.specs?.[key]).filter(Boolean))].sort();
+    const obj = {};
+    specsKeys.forEach(k => obj[k] = mapear(k));
+    return obj;
+  }, [products, specsKeys]);
+
+  // ------------------------
+  // FILTRADO DE PRODUCTOS
+  // ------------------------
+  const productosFiltrados = useMemo(() => {
+    return products
+      .filter(p => {
+        const specs = p.specs || {};
+        const checks = [
+          p.price <= precioMax,
+          marcaSeleccionada === defaultState || specs.marca === marcaSeleccionada,
+          busqueda === "" || p.name.toLowerCase().includes(busqueda.toLowerCase()) || p.description?.toLowerCase().includes(busqueda.toLowerCase()),
+          subcategoriaSeleccionada === defaultState || p.subcategory_id === subcategoriaSeleccionada,
+        ];
+
+        // Validamos todos los specs dinámicamente
+        Object.entries(specsFilters).forEach(([key, value]) => {
+          if (value !== defaultState) checks.push(specs[key] == value);
+        });
+
+        return checks.every(Boolean);
+      })
+      .sort((a, b) => (orden === "asc" ? a.price - b.price : b.price - a.price));
+  }, [products, precioMax, marcaSeleccionada, busqueda, subcategoriaSeleccionada, orden, specsFilters]);
+
+  // ------------------------
+  // LIMPIAR FILTROS
+  // ------------------------
   const limpiarFiltros = () => {
-    setFiltros({});
+    setPrecioMax(precioMaxReal);
+    setSubcategoriaSeleccionada(defaultState);
+    setMarcaSeleccionada(defaultState);
+    setBusqueda("");
+    setOrden("asc");
+    setSpecsFilters(specsKeys.reduce((acc, key) => ({ ...acc, [key]: defaultState }), {}));
   };
 
-  const ordenarProductos = (order = 'asc') => {
-    const sorted = [...productosFiltrados].sort((a, b) =>
-      order === 'asc' ? a.precio - b.precio : b.precio - a.precio
-    );
-    setProductosFiltrados(sorted);
+  return {
+    productosFiltrados,
+    precios: { precioMax, setPrecioMax, precioMaxReal },
+    filtrosSeleccionados: {
+      subcategoriaSeleccionada, setSubcategoriaSeleccionada,
+      marcaSeleccionada, setMarcaSeleccionada,
+      busqueda, setBusqueda,
+      orden, setOrden,
+      specsFilters, setSpecsFilters
+    },
+    totalFiltrados: productosFiltrados.length,
+    limpiarFiltros,
+    marcas,
+    specsUnicos,
   };
-
-  return { filtros, productosFiltrados, aplicarFiltro, limpiarFiltros, ordenarProductos };
 }

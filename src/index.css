@@ -2,24 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Variables y estilos globales */
-:root{
+:root {
+  /* Fondo de la página */
   --page-bg: radial-gradient(circle at top, #f5f5f5, #e6e6e6);
-  --text: #111827;        
-  --nav-text: #111827;   
+  
+  /* Colores de texto */
+  --text: #111827;
+  --nav-text: #111827;
   --nav-muted: #6b7280;
+
   --accent: #c084fc;
-  --menu-bg: rgba(255,255,255,0.9); 
-  --line: #111827;     
+
+  /* Menús / overlays */
+  --menu-bg: rgba(255,255,255,0.9);
+  --line: #111827;
+
+  /* Slick carousel (por ejemplo) */
+  --slick-dot-bg: #d1d5db;          /* gris claro */
+  --slick-dot-active: #c084fc;      /* accent */
+  --slick-arrow-bg: rgba(0,0,0,0.2);
+  --slick-arrow-hover: rgba(0,0,0,0.5);
 }
-html.dark{
+
+html.dark {
   --page-bg: radial-gradient(circle at bottom, #0b0b1f, #0b0b1f, #0b0b1f);
-  --text: #f8fafc;     
-  --nav-text: #f8fafc;   
+  
+  --text: #f8fafc;
+  --nav-text: #f8fafc;
   --nav-muted: #9ca3af;
   --accent: #a78bfa;
-  --menu-bg: rgba(6,6,10,1);   
-  --line: #f8fafc;      
+
+  --menu-bg: rgba(6,6,10,0.95);
+  --line: #f8fafc;
+
+  --slick-dot-bg: #4b5563;          /* gris oscuro */
+  --slick-dot-active: #a78bfa;      /* accent */
+  --slick-arrow-bg: rgba(255,255,255,0.8);
+  --slick-arrow-hover: rgba(255,255,255,0.5);
 }
 
 body {
@@ -137,3 +156,26 @@ button:active .icon-spin {
     .animate-fade-in {
       animation: fadeIn 0.6s ease forwards;
     }
+
+/* Puntos del slider */
+.slick-dots li button {
+  border-radius: 100%;
+  background-color: var(--slick-dot-bg) !important;
+}
+
+.slick-dots li.slick-active button {
+  background-color: var(--slick-dot-active) !important;
+}
+
+/* Flechas */
+.slick-prev,
+.slick-next {
+  background-color: var(--slick-arrow-bg) !important;
+  color: var(--text);
+}
+
+.slick-prev:hover,
+.slick-next:hover {
+  color: var(--text);
+  background-color: var(--slick-arrow-hover) !important;
+}
