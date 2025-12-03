@@ -13,7 +13,29 @@ import ProductPage from "./pages/products/[id].jsx";
 import Cart from "./pages/Cart.jsx";
 import Login from "./pages/Login.jsx";
 import Account from './pages/Account.jsx';
+import Checkout from "./pages/Checkout.jsx";
+import CheckoutSuccess from "./pages/CheckoutSuccess";
+import AdminProducts from './pages/admin/Products';
+import AdminCustomers from './pages/admin/Customers';
+import AdminCategories from './pages/admin/Categories';
+import AdminInventory from './pages/admin/Inventory';
+import AdminReports from './pages/admin/Reports';
+import AdminSettings from './pages/admin/Settings';
 function App() {
+  // Componente de protección de rutas
+  const AdminRoute = ({ children }) => {
+    const { user, isAdmin, isStaff } = useAuth();
+    
+    if (!user) {
+      return <Navigate to="/login" replace />;
+    }
+    
+    if (!isAdmin() && !isStaff()) {
+      return <Navigate to="/" replace />;
+    }
+    
+    return children;
+  };
   return (
     <Router>
       <Routes>
@@ -28,6 +50,8 @@ function App() {
         <Route path="/cart" element={<Cart />} />
         <Route path="/login" element={<Login />} />
         <Route path="/account/:tab?" element={<Account />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/checkout/success" element={<CheckoutSuccess />} />
       </Routes>
     </Router>
   );

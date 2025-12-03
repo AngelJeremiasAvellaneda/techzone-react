@@ -58,6 +58,26 @@ export function useAuth() {
     }
   };
 
+  // Función para verificar si el usuario es admin
+  const isAdmin = () => {
+    return profile?.role === 'admin';
+  };
+
+  // Función para verificar si el usuario es staff
+  const isStaff = () => {
+    return profile?.role === 'admin' || profile?.role === 'staff';
+  };
+
+  // Función para verificar si el usuario es cliente
+  const isCustomer = () => {
+    return profile?.role === 'customer' || !profile?.role;
+  };
+
+  // Función para obtener el rol del usuario
+  const getUserRole = () => {
+    return profile?.role || 'customer';
+  };
+
   const signUp = async ({ email, password, fullName }) => {
     try {
       setError(null);
@@ -169,16 +189,165 @@ export function useAuth() {
     }
   };
 
+  // Función para obtener todos los usuarios (solo para admins)
+  const getAllUsers = async () => {
+    try {
+      if (!isAdmin()) {
+        throw new Error('No tienes permisos para ver usuarios');
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return { success: true, users: data };
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Función para actualizar el rol de un usuario (solo para admins)
+  const updateUserRole = async (userId, newRole) => {
+    try {
+      if (!isAdmin()) {
+        throw new Error('No tienes permisos para cambiar roles');
+      }
+
+      // Validar que el rol sea válido
+      const validRoles = ['admin', 'staff', 'customer'];
+      if (!validRoles.includes(newRole)) {
+        throw new Error('Rol inválido');
+      }
+
+      // No permitir que un admin se quite su propio rol de admin
+      if (userId === user?.id && newRole !== 'admin') {
+        throw new Error('No puedes cambiar tu propio rol de administrador');
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: newRole })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      // Si el usuario actualizó su propio perfil, recargarlo
+      if (userId === user?.id) {
+        await loadProfile(userId);
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Función para obtener estadísticas de usuarios (solo para admins)
+  const getUserStats = async () => {
+    try {
+      if (!isAdmin()) {
+        throw new Error('No tienes permisos para ver estadísticas');
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .not('role', 'is', null);
+
+      if (error) throw error;
+
+      const stats = {
+        total: data.length,
+        admins: data.filter(u => u.role === 'admin').length,
+        staff: data.filter(u => u.role === 'staff').length,
+        customers: data.filter(u => u.role === 'customer').length,
+      };
+
+      return { success: true, stats };
+    } catch (error) {
+      console.error('Error fetching user stats:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Función para buscar usuarios (solo para admin/staff)
+  const searchUsers = async (query) => {
+    try {
+      if (!isAdmin() && !isStaff()) {
+        throw new Error('No tienes permisos para buscar usuarios');
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .or(`full_name.ilike.%${query}%,email.ilike.%${query}%`)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+      return { success: true, users: data };
+    } catch (error) {
+      console.error('Error searching users:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Función para obtener detalles de un usuario específico (solo para admin/staff)
+  const getUserById = async (userId) => {
+    try {
+      if (!isAdmin() && !isStaff()) {
+        throw new Error('No tienes permisos para ver detalles de usuario');
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select(`
+          *,
+          orders:orders(count)
+        `)
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+      return { success: true, user: data };
+    } catch (error) {
+      console.error('Error fetching user by id:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
   return {
+    // Estado
     user,
     profile,
     loading,
     error,
+    
+    // Funciones de autenticación
     signUp,
     signIn,
     signOut,
     updateProfile,
     resetPassword,
+    
+    // Verificación de autenticación
     isAuthenticated: !!user,
+    
+    // Funciones de roles
+    isAdmin,
+    isStaff,
+    isCustomer,
+    getUserRole,
+    
+    // Funciones de administración (solo para admin/staff)
+    getAllUsers,
+    updateUserRole,
+    getUserStats,
+    searchUsers,
+    getUserById
   };
 }

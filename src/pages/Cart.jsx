@@ -15,6 +15,7 @@ import {
   CreditCard,
   Tag
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Cart = () => {
   const {
@@ -25,7 +26,7 @@ const Cart = () => {
     totalItems,
     totalPrice
   } = useCartContext();
-
+  const navigate = useNavigate();
   const [promoCode, setPromoCode] = useState("");
   const [discount, setDiscount] = useState(0);
 
@@ -274,10 +275,12 @@ const Cart = () => {
                   </div>
 
                   {/* Botón finalizar compra */}
-                  <button className="w-full flex items-center justify-center gap-2 py-4 bg-[var(--accent)] hover:opacity-90 text-white rounded-lg font-bold text-lg transition-all shadow-lg">
-                    Finalizar compra
-                    <ArrowRight className="w-5 h-5" />
-                  </button>
+                  <Link to="/checkout">
+                    <button className="w-full flex items-center justify-center gap-2 py-4 bg-[var(--accent)] hover:opacity-90 text-white rounded-lg font-bold text-lg transition-all shadow-lg">
+                      Proceder al Pago
+                      <ArrowRight className="w-5 h-5" />
+                    </button>
+                  </Link>
 
                   {/* Envío gratis banner */}
                   {shipping > 0 && totalPrice < 100 && (
