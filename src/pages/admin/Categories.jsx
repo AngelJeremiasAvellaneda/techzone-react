@@ -1,7 +1,7 @@
 // src/pages/admin/Categories.jsx
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import AdminLayout from './AdminLayout';
+import AdminLayout from '../../layouts/AdminLayout';
 import {
   Search, Plus, Edit, Trash2, Tag,
   ChevronLeft, ChevronRight, Filter,
@@ -99,7 +99,7 @@ const AdminCategories = () => {
   };
 
   return (
-    <AdminLayout title="Gestión de Categorías">
+    <>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Categorías</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
@@ -309,7 +309,7 @@ const AdminCategories = () => {
           </div>
         </div>
       )}
-    </AdminLayout>
+    </>
   );
 };
 

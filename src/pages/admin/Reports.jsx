@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import AdminLayout from './AdminLayout';
 import {
   BarChart3, TrendingUp, TrendingDown, DollarSign,
   Users, ShoppingCart, Package, Download,
@@ -454,7 +453,7 @@ const AdminReports = () => {
   };
 
   return (
-    <AdminLayout title={getReportTitle()}>
+    <>
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
@@ -1216,7 +1215,7 @@ const AdminReports = () => {
           )}
         </div>
       )}
-    </AdminLayout>
+    </>
   );
 };
 

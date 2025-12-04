@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabaseClient';
-import AdminLayout from './AdminLayout';
 import { useAuth } from '../../hooks/useAuth';
 import {
   Settings as SettingsIcon, Save, Globe, CreditCard,
@@ -1057,7 +1055,7 @@ const AdminSettings = () => {
   };
 
   return (
-    <AdminLayout title="Configuración">
+    <>
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
@@ -1158,7 +1156,7 @@ const AdminSettings = () => {
           </div>
         </div>
       </div>
-    </AdminLayout>
+    </>
   );
 };
 

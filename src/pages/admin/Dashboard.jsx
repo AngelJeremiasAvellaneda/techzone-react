@@ -1,7 +1,6 @@
 // src/pages/admin/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import AdminLayout from './AdminLayout';
 import {
   TrendingUp, DollarSign, ShoppingCart, Users,
   Package, BarChart3, Activity, Calendar,
@@ -54,7 +53,7 @@ const AdminDashboard = () => {
       // Total de ventas
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
-        .select('total, status');
+        .select('total, status, created_at');
 
       if (ordersError) throw ordersError;
       
@@ -84,6 +83,7 @@ const AdminDashboard = () => {
       const currentMonth = new Date().getMonth();
       const currentYear = new Date().getFullYear();
       const monthlyOrders = ordersData?.filter(order => {
+        if (!order.created_at) return false;
         const orderDate = new Date(order.created_at);
         return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
       }) || [];
@@ -147,7 +147,7 @@ const AdminDashboard = () => {
             price
           )
         `)
-        .limit(5);
+        .limit(10); // Aumentado para mejor agrupación
 
       if (error) throw error;
       
@@ -163,8 +163,8 @@ const AdminDashboard = () => {
               totalRevenue: 0
             };
           }
-          productSales[productId].totalQuantity += item.quantity;
-          productSales[productId].totalRevenue += item.quantity * (item.product?.price || 0);
+          productSales[productId].totalQuantity += item.quantity || 0;
+          productSales[productId].totalRevenue += (item.quantity || 0) * (item.product?.price || 0);
         }
       });
 
@@ -180,19 +180,20 @@ const AdminDashboard = () => {
 
   const getStatusInfo = (status) => {
     const statusMap = {
-      pending: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
-      paid: { label: 'Pagado', color: 'bg-blue-100 text-blue-800', icon: CreditCard },
-      processing: { label: 'Procesando', color: 'bg-purple-100 text-purple-800', icon: Package },
-      shipped: { label: 'Enviado', color: 'bg-indigo-100 text-indigo-800', icon: Truck },
-      delivered: { label: 'Entregado', color: 'bg-green-100 text-green-800', icon: CheckCircle }
+      pending: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300', icon: Clock },
+      paid: { label: 'Pagado', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300', icon: CreditCard },
+      processing: { label: 'Procesando', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300', icon: Package },
+      shipped: { label: 'Enviado', color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300', icon: Truck },
+      delivered: { label: 'Entregado', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300', icon: CheckCircle },
+      cancelled: { label: 'Cancelado', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300', icon: CheckCircle }
     };
-    return statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-800', icon: Package };
+    return statusMap[status] || { label: status || 'Desconocido', color: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300', icon: Package };
   };
 
   const statCards = [
     {
       label: 'Ventas Totales',
-      value: `S/. ${stats.totalSales.toLocaleString('es-PE')}`,
+      value: `S/. ${stats.totalSales.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`,
       icon: DollarSign,
       color: 'bg-green-500',
       change: '+12.5%',
@@ -225,7 +226,7 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <AdminLayout title="Panel de Control">
+    <>
       {/* Header con acciones */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
@@ -244,12 +245,12 @@ const AdminDashboard = () => {
           <button
             onClick={loadDashboardData}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Actualizar
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+          <button className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
             <Download className="w-4 h-4" />
             Exportar
           </button>
@@ -286,7 +287,7 @@ const AdminDashboard = () => {
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">Pedidos Recientes</h2>
-            <a href="/admin/orders" className="text-sm text-purple-600 dark:text-purple-400 hover:underline">
+            <a href="/admin/orders" className="text-sm text-purple-600 dark:text-purple-400 hover:underline transition-colors">
               Ver todos →
             </a>
           </div>
@@ -306,15 +307,19 @@ const AdminDashboard = () => {
                 const statusInfo = getStatusInfo(order.status);
                 const StatusIcon = statusInfo.icon;
                 const customerName = order.profiles?.full_name || 'Cliente';
-                
+
+                const orderId = order.id 
+                  ? String(order.id).slice(-8).toUpperCase() 
+                  : 'N/A';
+
                 return (
-                  <div key={order.id} className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/50">
+                  <div key={order.id} className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-500 flex items-center justify-center text-white text-sm font-bold">
                         {customerName.charAt(0)}
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-white">Pedido #{order.id.slice(0, 8)}</p>
+                        <p className="font-medium text-gray-900 dark:text-white">Pedido #{orderId}</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">{customerName}</p>
                       </div>
                     </div>
@@ -327,7 +332,7 @@ const AdminDashboard = () => {
                         </span>
                       </div>
                       <p className="text-lg font-bold text-gray-900 dark:text-white">
-                        S/. {order.total?.toLocaleString('es-PE') || '0'}
+                        S/. {(order.total || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                       </p>
                     </div>
                   </div>
@@ -341,7 +346,7 @@ const AdminDashboard = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">Productos Destacados</h2>
-            <a href="/admin/products" className="text-sm text-purple-600 dark:text-purple-400 hover:underline">
+            <a href="/admin/products" className="text-sm text-purple-600 dark:text-purple-400 hover:underline transition-colors">
               Ver todos →
             </a>
           </div>
@@ -358,10 +363,25 @@ const AdminDashboard = () => {
               </div>
             ) : (
               topProducts.map((item, index) => (
-                <div key={item.product?.id || index} className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/50">
+                <div key={item.product?.id || index} className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
                   <div className="w-12 h-12 bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden flex-shrink-0">
                     {item.product?.image ? (
-                      <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
+                      <img 
+                        src={item.product.image} 
+                        alt={item.product.name} 
+                        className="w-full h-full object-cover" 
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = '';
+                          e.target.parentElement.innerHTML = `
+                            <div class="w-full h-full bg-gradient-to-br from-purple-500 to-fuchsia-500 flex items-center justify-center">
+                              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                              </svg>
+                            </div>
+                          `;
+                        }}
+                      />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-purple-500 to-fuchsia-500 flex items-center justify-center">
                         <Package className="w-6 h-6 text-white" />
@@ -378,7 +398,7 @@ const AdminDashboard = () => {
                         {item.totalQuantity} vendidos
                       </span>
                       <span className="font-bold text-purple-600 dark:text-purple-400">
-                        S/. {item.totalRevenue?.toLocaleString('es-PE') || '0'}
+                        S/. {(item.totalRevenue || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                       </span>
                     </div>
                   </div>
@@ -399,7 +419,7 @@ const AdminDashboard = () => {
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Ingresos del Mes</p>
               <p className="text-xl font-bold text-gray-900 dark:text-white">
-                S/. {stats.monthlyRevenue.toLocaleString('es-PE')}
+                S/. {(stats.monthlyRevenue || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
               </p>
             </div>
           </div>
@@ -437,13 +457,13 @@ const AdminDashboard = () => {
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Ticket Promedio</p>
               <p className="text-xl font-bold text-gray-900 dark:text-white">
-                S/. {stats.averageOrderValue.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                S/. {(stats.averageOrderValue || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
               </p>
             </div>
           </div>
         </div>
       </div>
-    </AdminLayout>
+    </>
   );
 };
 

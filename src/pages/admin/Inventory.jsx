@@ -1,7 +1,6 @@
 // src/pages/admin/Inventory.jsx
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import AdminLayout from './AdminLayout';
 import {
   Search, Filter, Download, Package,
   AlertTriangle, CheckCircle, XCircle,
@@ -66,7 +65,7 @@ const AdminInventory = () => {
   };
 
   return (
-    <AdminLayout title="Gestión de Inventario">
+    <>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Inventario</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
@@ -264,7 +263,7 @@ const AdminInventory = () => {
                       </td>
                       <td className="px-6 py-4">
                         <code className="text-sm bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">
-                          {product.id.slice(0, 8)}
+                          {(product.id + "").slice(0, 6)}
                         </code>
                       </td>
                       <td className="px-6 py-4">
@@ -312,7 +311,7 @@ const AdminInventory = () => {
           </table>
         </div>
       </div>
-    </AdminLayout>
+  </>
   );
 };
 

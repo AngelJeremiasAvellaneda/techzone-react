@@ -1,6 +1,6 @@
 // src/pages/admin/Customers.jsx
 import React from "react";
-import AdminLayout from "./AdminLayout"; // Necesitas crear este componente
+import AdminLayout from '../../layouts/AdminLayout';
 
 const AdminCustomers = () => {
   return (

@@ -1,7 +1,7 @@
 // src/pages/admin/AdminLayout.jsx
 import React, { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../hooks/useAuth';
 import {
   Home, Package, Users, BarChart3, Settings, 
   LogOut, Menu, X, Bell, Search, Shield,

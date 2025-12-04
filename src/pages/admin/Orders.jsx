@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import AdminLayout from './AdminLayout';
 import { useAuth } from '../../hooks/useAuth';
 import {
   Search, Filter, Download, Eye, Edit, Trash2,
@@ -331,7 +330,7 @@ const AdminOrders = () => {
   const totalPages = Math.ceil(totalOrders / itemsPerPage);
 
   return (
-    <AdminLayout title="Gestión de Pedidos">
+    <>
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
@@ -1040,7 +1039,7 @@ const AdminOrders = () => {
           </div>
         </div>
       )}
-    </AdminLayout>
+    </>
   );
 };
 
