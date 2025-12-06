@@ -1,20 +1,21 @@
-// NotFoundRedirect.jsx - Corregir
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const NotFoundRedirect = () => {
   const navigate = useNavigate();
-  const { user, isAdminOrStaff } = useAuth(); // Usar isAdminOrStaff del contexto
+  const { user, isAdminOrStaff, loading } = useAuth();
 
   useEffect(() => {
-    // Redirigir según el rol del usuario
-    if (user && isAdminOrStaff && isAdminOrStaff()) {
-      navigate('/admin', { replace: true });
-    } else {
-      navigate('/', { replace: true });
+    if (!loading) {
+      // Respetar el Route Jail
+      if (user && isAdminOrStaff()) {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     }
-  }, [user, isAdminOrStaff, navigate]);
+  }, [user, isAdminOrStaff, loading, navigate]);
 
   return (
     <div className="flex items-center justify-center h-screen">

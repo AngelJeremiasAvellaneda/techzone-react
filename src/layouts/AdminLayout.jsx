@@ -1,6 +1,7 @@
   import React, { useState, useEffect } from 'react';
   import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
   import { useAuth } from '../context/AuthContext';
+  import useRouteJail from '../hooks/useRouteJail';
   import {
     Home, Package, Users, BarChart3, Settings, 
     LogOut, Menu, X, Bell, Search, Shield,
@@ -15,7 +16,7 @@
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
-
+    useRouteJail();
     useEffect(() => {
       document.title = `${title} - TechZone Admin`;
     }, [title]);
@@ -23,6 +24,7 @@
     // 🔴 ROUTE JAIL: Si no es admin, sacarlo de aquí
     useEffect(() => {
       if (user && profile && !(profile.role === 'admin' || profile.role === 'staff')) {
+        console.log("🚫 No-admin en área admin, redirigiendo a /");
         navigate('/');
       }
     }, [user, profile, navigate]);

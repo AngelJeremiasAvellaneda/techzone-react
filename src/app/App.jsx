@@ -11,6 +11,7 @@ import AdminLayout from "../layouts/AdminLayout";
 // Components
 import ProtectedRoutes from "../components/ProtectedRoutes";
 import GuestOnlyRoutes from "../components/GuestOnlyRoutes";
+import AdminRedirector from "../components/AdminRedirector";  
 
 // Pages
 import Home from "../pages/index";
@@ -68,62 +69,65 @@ function AppContent() {
   console.log("🚀 Renderizando rutas...");
 
   return (
-    <Routes>
-      {/* RUTAS PÚBLICAS */}
-      <Route path="/" element={<BaseLayout />}>
-        <Route index element={<Home />} />
-        <Route path="about" element={<About />} />
-        <Route path="contact" element={<Contact />} />
-        <Route path="news" element={<News />} />
-        <Route path="laptops" element={<Laptops />} />
-        <Route path="desktops" element={<Desktops />} />
-        <Route path="accessories" element={<Accessories />} />
-        <Route path="products/:id" element={<ProductPage />} />
-        <Route path="cart" element={<Cart />} />
-      </Route>
-
-      {/* RUTAS SOLO PARA INVITADOS */}
-      <Route element={<GuestOnlyRoutes />}>
-        <Route path="login" element={<Login />} />
-        <Route path="register" element={<Register />} />
-      </Route>
-
-      {/* RUTAS PARA CLIENTES AUTENTICADOS */}
-      <Route element={<ProtectedRoutes requiredRole="customer" />}>
-        <Route element={<BaseLayout />}>
-          <Route path="checkout" element={<Checkout />} />
-          <Route path="checkout-success" element={<CheckoutSuccess />} />
-          <Route path="account/*" element={<Account />} />
+    <>
+      <AdminRedirector />
+      <Routes>
+        {/* RUTAS PÚBLICAS */}
+        <Route path="/" element={<BaseLayout />}>
+          <Route index element={<Home />} />
+          <Route path="about" element={<About />} />
+          <Route path="contact" element={<Contact />} />
+          <Route path="news" element={<News />} />
+          <Route path="laptops" element={<Laptops />} />
+          <Route path="desktops" element={<Desktops />} />
+          <Route path="accessories" element={<Accessories />} />
+          <Route path="products/:id" element={<ProductPage />} />
+          <Route path="cart" element={<Cart />} />
         </Route>
-      </Route>
 
-      {/* RUTAS ADMIN */}
-      <Route element={<ProtectedRoutes requiredRole={["admin", "staff"]} />}>
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="orders" element={<Orders />} />
-          <Route path="products" element={<Products />} />
-          <Route path="customers" element={<Customers />} />
-          <Route path="categories" element={<Categories />} />
-          <Route path="inventory" element={<Inventory />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="settings" element={<Settings />} />
+        {/* RUTAS SOLO PARA INVITADOS */}
+        <Route element={<GuestOnlyRoutes />}>
+          <Route path="login" element={<Login />} />
+          <Route path="register" element={<Register />} />
         </Route>
-      </Route>
 
-      {/* 404 SIMPLE */}
-      <Route path="*" element={
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-800 mb-4">404</h1>
-            <p className="text-gray-600">Página no encontrada</p>
-            <a href="/" className="mt-4 inline-block text-blue-600 hover:underline">
-              Volver al inicio
-            </a>
+        {/* RUTAS PARA CLIENTES AUTENTICADOS */}
+        <Route element={<ProtectedRoutes requiredRole="customer" />}>
+          <Route element={<BaseLayout />}>
+            <Route path="checkout" element={<Checkout />} />
+            <Route path="checkout-success" element={<CheckoutSuccess />} />
+            <Route path="account/*" element={<Account />} />
+          </Route>
+        </Route>
+
+        {/* RUTAS ADMIN */}
+        <Route element={<ProtectedRoutes requiredRole={["admin", "staff"]} />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="orders" element={<Orders />} />
+            <Route path="products" element={<Products />} />
+            <Route path="customers" element={<Customers />} />
+            <Route path="categories" element={<Categories />} />
+            <Route path="inventory" element={<Inventory />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
+        </Route>
+
+        {/* 404 SIMPLE */}
+        <Route path="*" element={
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="text-center">
+              <h1 className="text-4xl font-bold text-gray-800 mb-4">404</h1>
+              <p className="text-gray-600">Página no encontrada</p>
+              <a href="/" className="mt-4 inline-block text-blue-600 hover:underline">
+                Volver al inicio
+              </a>
+            </div>
           </div>
-        </div>
-      } />
-    </Routes>
+        } />
+      </Routes>
+    </> 
   );
 }
 
