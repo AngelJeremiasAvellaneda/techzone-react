@@ -1,7 +1,6 @@
 // src/pages/Cart.jsx
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import BaseLayout from "../layouts/BaseLayout";
 import { useCartContext } from "../context/CartContext";
 import { 
   ShoppingBag, 
@@ -44,7 +43,7 @@ const Cart = () => {
   };
 
   return (
-    <BaseLayout title="Carrito de Compras">
+    <>
       <main className="mt-16 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto py-12">
         {/* Breadcrumb */}
         <nav className="mb-8 text-sm text-[var(--nav-muted)]">
@@ -333,7 +332,7 @@ const Cart = () => {
           </div>
         )}
       </main>
-    </BaseLayout>
+    </>
   );
 };
 

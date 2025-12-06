@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import BaseLayout from "../layouts/BaseLayout";
+// REMOVER: import BaseLayout from "../layouts/BaseLayout";
 import { FiTruck, FiShield, FiTrendingUp } from "react-icons/fi";
 import { Laptop, Monitor, Headphones, Star } from "lucide-react";
 
@@ -21,7 +21,8 @@ export default function Home() {
   }, [current]);
 
   return (
-    <BaseLayout title="TechZone">
+    // REMOVER: <BaseLayout title="TechZone"> y su cierre
+    <>
       {/* Hero Section */}
       <section className="relative w-full h-[calc(100vh-4rem)] flex flex-col md:flex-row items-center justify-center md:justify-start mt-16 pt-16 overflow-hidden">
         {slides.map((slide, index) => (
@@ -127,15 +128,15 @@ export default function Home() {
         <div className="flex justify-around flex-wrap gap-8">
           <div className="flex flex-col items-center gap-2 cursor-pointer hover:scale-105 transform transition">
             <Laptop className="text-6xl text-[var(--accent)]" />
-            <span>Laptops</span>
+            <span className="text-[var(--text)] font-medium">Laptops</span>
           </div>
           <div className="flex flex-col items-center gap-2 cursor-pointer hover:scale-105 transform transition">
             <Monitor className="text-6xl text-[var(--accent)]" />
-            <span>Desktops</span>
+            <span className="text-[var(--text)] font-medium">Desktops</span>
           </div>
           <div className="flex flex-col items-center gap-2 cursor-pointer hover:scale-105 transform transition">
             <Headphones className="text-6xl text-[var(--accent)]" />
-            <span>Accesorios</span>
+            <span className="text-[var(--text)] font-medium">Accesorios</span>
           </div>
         </div>
       </section>
@@ -153,6 +154,6 @@ export default function Home() {
           ))}
         </div>
       </section>
-    </BaseLayout>
+    </>
   );
 }

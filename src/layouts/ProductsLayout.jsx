@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import BaseLayout from "./BaseLayout";
 import { FaFilter, FaBroom } from "react-icons/fa";
 import { useFilters } from "../components/useFilters";
 import FiltrosUI from "../components/FiltrosUI";
@@ -27,7 +26,7 @@ export default function ProductsLayout({ title, products, subcategories = [], ca
   const toggleMobileFilters = () => setMobileFiltersOpen(!mobileFiltersOpen);
 
   return (
-    <BaseLayout title={title}>
+    <>
       {/* Encabezado */}
       <section className="mt-16 px-6 border-b border-gray-500 pb-4">
         <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
@@ -163,6 +162,6 @@ export default function ProductsLayout({ title, products, subcategories = [], ca
           )}
         </section>
       </main>
-    </BaseLayout>
+    </>
   );
 }

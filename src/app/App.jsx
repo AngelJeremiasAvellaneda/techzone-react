@@ -1,154 +1,139 @@
-// src/App.jsx
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 
-// Context Providers
-import { CartProvider } from "./context/CartContext";
-import { AuthProvider } from "./context/AuthContext";
+import { CartProvider } from "../context/CartContext";
+import { AuthProvider, useAuth } from "../context/AuthContext";
 
 // Layouts
-import BaseLayout from "./layouts/BaseLayout";
-import AdminLayout from "./layouts/AdminLayout";
+import BaseLayout from "../layouts/BaseLayout";
+import AdminLayout from "../layouts/AdminLayout";
 
-// Páginas públicas
-import Home from "./pages/index.jsx";
-import About from "./pages/About.jsx";
-import Contact from "./pages/Contact.jsx";
-import News from "./pages/News.jsx";
-import Laptops from "./pages/Laptops.jsx";
-import Desktops from "./pages/Desktops.jsx";
-import Accessories from "./pages/Accessories.jsx";
-import ProductPage from "./pages/products/[id].jsx";
-import Cart from "./pages/Cart.jsx";
-import Login from "./pages/Login.jsx";
-import Register from "./pages/Register.jsx";
-import Account from './pages/Account.jsx';
-import Checkout from "./pages/Checkout.jsx";
-import CheckoutSuccess from "./pages/CheckoutSuccess.jsx";
+// Components
+import ProtectedRoutes from "../components/ProtectedRoutes";
+import GuestOnlyRoutes from "../components/GuestOnlyRoutes";
 
-// Páginas de administración
-import AdminDashboard from './pages/admin/Dashboard.jsx';
-import AdminOrders from './pages/admin/Orders.jsx';
-import AdminProducts from './pages/admin/Products.jsx';
-import AdminCustomers from './pages/admin/Customers.jsx';
-import AdminCategories from './pages/admin/Categories.jsx';
-import AdminInventory from './pages/admin/Inventory.jsx';
-import AdminReports from './pages/admin/Reports.jsx';
-import AdminSettings from './pages/admin/Settings.jsx';
+// Pages
+import Home from "../pages/index";
+import About from "../pages/About";
+import Contact from "../pages/Contact";
+import News from "../pages/News";
+import Laptops from "../pages/Laptops";
+import Desktops from "../pages/Desktops";
+import Accessories from "../pages/Accessories";
+import ProductPage from "../pages/products/[id]";
+import Cart from "../pages/Cart";
+import Login from "../pages/Login";
+import Register from "../pages/Register";
+import Account from "../pages/Account";
+import Checkout from "../pages/Checkout";
+import CheckoutSuccess from "../pages/CheckoutSuccess";
 
-// Importamos los componentes de rutas protegidas desde un archivo separado
-import ProtectedRoutes from "./components/ProtectedRoutes";
+// Admin Pages
+import Dashboard from "../pages/admin/Dashboard";
+import Orders from "../pages/admin/Orders";
+import Products from "../pages/admin/Products";
+import Customers from "../pages/admin/Customers";
+import Categories from "../pages/admin/Categories";
+import Inventory from "../pages/admin/Inventory";
+import Reports from "../pages/admin/Reports";
+import Settings from "../pages/admin/Settings";
 
-// Componente principal App
+// Simple Loader
+const LoadingScreen = () => {
+  console.log("🌀 Mostrando loader...");
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+        <p className="text-gray-600">Cargando TechStore...</p>
+      </div>
+    </div>
+  );
+};
+
+// App Content Component
+function AppContent() {
+  const { loading, user, profile } = useAuth();
+  
+  console.log("📱 AppContent - Estado:", { 
+    loading, 
+    user: user?.email, 
+    role: profile?.role 
+  });
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  console.log("🚀 Renderizando rutas...");
+
+  return (
+    <Routes>
+      {/* RUTAS PÚBLICAS */}
+      <Route path="/" element={<BaseLayout />}>
+        <Route index element={<Home />} />
+        <Route path="about" element={<About />} />
+        <Route path="contact" element={<Contact />} />
+        <Route path="news" element={<News />} />
+        <Route path="laptops" element={<Laptops />} />
+        <Route path="desktops" element={<Desktops />} />
+        <Route path="accessories" element={<Accessories />} />
+        <Route path="products/:id" element={<ProductPage />} />
+        <Route path="cart" element={<Cart />} />
+      </Route>
+
+      {/* RUTAS SOLO PARA INVITADOS */}
+      <Route element={<GuestOnlyRoutes />}>
+        <Route path="login" element={<Login />} />
+        <Route path="register" element={<Register />} />
+      </Route>
+
+      {/* RUTAS PARA CLIENTES AUTENTICADOS */}
+      <Route element={<ProtectedRoutes requiredRole="customer" />}>
+        <Route element={<BaseLayout />}>
+          <Route path="checkout" element={<Checkout />} />
+          <Route path="checkout-success" element={<CheckoutSuccess />} />
+          <Route path="account/*" element={<Account />} />
+        </Route>
+      </Route>
+
+      {/* RUTAS ADMIN */}
+      <Route element={<ProtectedRoutes requiredRole={["admin", "staff"]} />}>
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="orders" element={<Orders />} />
+          <Route path="products" element={<Products />} />
+          <Route path="customers" element={<Customers />} />
+          <Route path="categories" element={<Categories />} />
+          <Route path="inventory" element={<Inventory />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="settings" element={<Settings />} />
+        </Route>
+      </Route>
+
+      {/* 404 SIMPLE */}
+      <Route path="*" element={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-gray-800 mb-4">404</h1>
+            <p className="text-gray-600">Página no encontrada</p>
+            <a href="/" className="mt-4 inline-block text-blue-600 hover:underline">
+              Volver al inicio
+            </a>
+          </div>
+        </div>
+      } />
+    </Routes>
+  );
+}
+
+// Main App
 function App() {
+  console.log("🎬 App: Iniciando aplicación");
   return (
     <AuthProvider>
       <CartProvider>
-        <Router>
-          <Routes>
-            {/* Rutas públicas - Usan BaseLayout */}
-            <Route path="/" element={
-              <BaseLayout title="TechZone - Tu Tienda de Tecnología">
-                <Home />
-              </BaseLayout>
-            } />
-            
-            <Route path="/about" element={
-              <BaseLayout title="Sobre Nosotros - TechZone">
-                <About />
-              </BaseLayout>
-            } />
-            
-            <Route path="/contact" element={
-              <BaseLayout title="Contacto - TechZone">
-                <Contact />
-              </BaseLayout>
-            } />
-            
-            <Route path="/news" element={
-              <BaseLayout title="Novedades - TechZone">
-                <News />
-              </BaseLayout>
-            } />
-            
-            <Route path="/laptops" element={
-              <BaseLayout title="Laptops - TechZone">
-                <Laptops />
-              </BaseLayout>
-            } />
-            
-            <Route path="/desktops" element={
-              <BaseLayout title="Desktops - TechZone">
-                <Desktops />
-              </BaseLayout>
-            } />
-            
-            <Route path="/accessories" element={
-              <BaseLayout title="Accesorios - TechZone">
-                <Accessories />
-              </BaseLayout>
-            } />
-            
-            <Route path="/products/:id" element={
-              <BaseLayout title="Producto - TechZone">
-                <ProductPage />
-              </BaseLayout>
-            } />
-            
-            <Route path="/cart" element={
-              <BaseLayout title="Carrito de Compras - TechZone">
-                <Cart />
-              </BaseLayout>
-            } />
-            
-            {/* Rutas de autenticación */}
-            <Route path="/login" element={
-              <BaseLayout title="Iniciar Sesión - TechZone">
-                <Login />
-              </BaseLayout>
-            } />
-            
-            <Route path="/register" element={
-              <BaseLayout title="Crear Cuenta - TechZone">
-                <Register />
-              </BaseLayout>
-            } />
-            
-            {/* Todas las rutas protegidas están en ProtectedRoutes */}
-            <Route path="/*" element={<ProtectedRoutes />} />
-            
-            {/* Ruta 404 - Not Found */}
-            <Route path="*" element={
-              <BaseLayout title="Página no encontrada - TechZone">
-                <div className="min-h-screen flex items-center justify-center pt-24">
-                  <div className="text-center px-4">
-                    <h1 className="text-6xl md:text-9xl font-bold text-purple-600 dark:text-purple-400 mb-6">404</h1>
-                    <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                      Página no encontrada
-                    </h2>
-                    <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
-                      La página que estás buscando no existe o ha sido movida.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                      <a 
-                        href="/" 
-                        className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
-                      >
-                        Volver al inicio
-                      </a>
-                      <a 
-                        href="/contact" 
-                        className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium"
-                      >
-                        Contactar soporte
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </BaseLayout>
-            } />
-          </Routes>
-        </Router>
+        <AppContent />
       </CartProvider>
     </AuthProvider>
   );

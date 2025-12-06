@@ -1,7 +1,6 @@
 // src/pages/admin/Categories.jsx
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import AdminLayout from '../../layouts/AdminLayout';
 import {
   Search, Plus, Edit, Trash2, Tag,
   ChevronLeft, ChevronRight, Filter,

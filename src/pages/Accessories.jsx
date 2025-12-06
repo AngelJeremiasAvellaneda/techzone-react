@@ -1,4 +1,3 @@
-import BaseLayout from "../layouts/BaseLayout";
 import ProductsLayout from "../layouts/ProductsLayout";
 import { useProductsByCategory } from "../hooks/useProducts";
 import { useSubcategoriesByName } from "../hooks/useSubcategories";
@@ -12,7 +11,7 @@ export default function Accesories() {
   // Mostrar loader mientras carga
   if (loading || loadingSubcats) {
     return (
-      <BaseLayout title="Accesorios">
+      <>
         <div className="mt-16 px-6">
           <h1 className="text-3xl md:text-4xl font-bold text-[var(--accent)] mb-8">
             Accesorios
@@ -23,20 +22,20 @@ export default function Accesories() {
             ))}
           </div>
         </div>
-      </BaseLayout>
+      </>
     );
   }
 
   // Mostrar error si hay
   if (error) {
     return (
-      <BaseLayout title="Accesorios">
+      <>
         <div className="mt-16 px-6">
           <div className="bg-red-900/20 border border-red-500 rounded-lg p-4">
             <p className="text-red-400">Error al cargar accesorios: {error}</p>
           </div>
         </div>
-      </BaseLayout>
+      </>
     );
   }
 

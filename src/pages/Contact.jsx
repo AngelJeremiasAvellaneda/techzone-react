@@ -1,5 +1,4 @@
 import { useState } from "react";
-import BaseLayout from "../layouts/BaseLayout";
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -37,7 +36,7 @@ export default function Contact() {
   };
 
   return (
-    <BaseLayout title="Contacto | TechZone">
+    <>
       <section className="min-h-screen flex flex-col md:flex-row items-center justify-center text-[var(--text)] px-6 md:px-16 py-20 relative overflow-hidden">
         {/* Contenedor principal */}
         <div className="w-full md:w-1/2 z-10">
@@ -128,6 +127,6 @@ export default function Contact() {
           </div>
         </div>
       </section>
-    </BaseLayout>
+    </>
   );
 }

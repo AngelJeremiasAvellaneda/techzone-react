@@ -1,33 +1,24 @@
-// src/layouts/BaseLayout.jsx
+// src/layouts/BaseLayout.jsx (OPCIONAL - si necesitas espacio para Header fijo)
 import React, { useEffect } from "react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import CartDrawer from "../components/CartDrawer";
-import "../index.css";
+import { Outlet } from "react-router-dom";
 
-const BaseLayout = ({ children, title = "TechZone" }) => {
+const BaseLayout = ({ title = "TechZone" }) => {
   useEffect(() => {
-    // Establecer título de la página
     document.title = title;
-
-    // Animación de iconos al cargar
-    const icons = document.querySelectorAll(".icon-spin");
-    icons.forEach(icon => {
-      icon.classList.add("animate-on-load");
-      const timer = setTimeout(() => {
-        icon.classList.remove("animate-on-load");
-      }, 1000);
-      return () => clearTimeout(timer);
-    });
-
-    // Scroll suave al inicio
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [title]);
 
   return (
-    <div className="bg-[var(--page-bg)] text-[var(--text)] transition-colors duration-300 min-h-screen flex flex-col overflow-x-hidden">
+    <div className="bg-[var(--page-bg)] text-[var(--text)] min-h-screen flex flex-col">
       <Header />
-      <main className="flex-grow relative z-10">{children}</main>
+      
+      <main className="flex-grow pt-16">
+        <Outlet />
+      </main>
+
       <Footer />
     </div>
   );

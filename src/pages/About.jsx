@@ -1,10 +1,6 @@
-import BaseLayout from "../layouts/BaseLayout"; // Ajusta la ruta según tu proyecto
-
 export default function About() {
-  const pageTitle = "Nosotros - TechZone";
-
   return (
-    <BaseLayout title={pageTitle} currentPage="/About">
+    <>
       {/* Sobre TechZone */}
       <section
         id="about"
@@ -119,6 +115,6 @@ export default function About() {
           Contáctanos
         </a>
       </section>
-    </BaseLayout>
+    </>
   );
 }

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import BaseLayout from "../layouts/BaseLayout";
 
 const newsData = [
   {
@@ -30,7 +29,7 @@ export default function News() {
   };
 
   return (
-    <BaseLayout title="Novedades | TechZone">
+    <>
       <section className="min-h-screen pt-28 pb-16">
         <div className="max-w-7xl mx-auto text-center mb-16 px-6">
           <h1 className="text-4xl md:text-5xl font-extrabold mb-3">📰 Últimas Novedades</h1>
@@ -82,6 +81,6 @@ export default function News() {
           ))}
         </div>
       </section>
-    </BaseLayout>
+    </>
   );
 }

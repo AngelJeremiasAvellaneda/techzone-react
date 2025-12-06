@@ -7,11 +7,11 @@ import useTheme from "../hooks/useTheme.js";
 import { 
   Sun, Moon, ShoppingCart, Menu, X, 
   User, LogIn, UserPlus, Settings, 
-  Heart, Package, MapPin, Shield, // Añadido Shield
-  LogOut, ChevronDown, Home, Info, // Añadidos
-  Bell, Gift, ArrowRight // Añadidos
+  Heart, Package, MapPin, Shield,
+  LogOut, ChevronDown, Home, Info,
+  Bell, Gift, ArrowRight
 } from "lucide-react";
-import { Link, useNavigate, useLocation } from "react-router-dom"; // Añadido useLocation
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 const products = [
   { name: "Laptops", href: "/Laptops", icon: "" },
@@ -24,7 +24,7 @@ const Header = () => {
   const { user, profile, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const location = useLocation(); // Para obtener la ruta actual
+  const location = useLocation();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [submenuOpen, setSubmenuOpen] = useState(false);
@@ -112,7 +112,7 @@ const Header = () => {
   return (
     <>
       <header 
-        className="fixed top-0 w-full z-50 backdrop-blur-2xl bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800 transition-all duration-300"
+        className="fixed top-0 w-full z-50 backdrop-blur-2xl bg-[var(--page-bg)] border-b border-gray-200 dark:border-gray-800 transition-all duration-300"
         style={cssVariables}
       >
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16 relative z-50">
@@ -220,16 +220,8 @@ const Header = () => {
           <div className="hidden md:flex items-center space-x-3">
             {user ? (
               <>
-                {/* Botón de administración para admin/staff */}
-                {isAdminOrStaff() && (
-                  <Link
-                    to="/admin"
-                    className="flex items-center gap-2 px-3 py-2 text-sm bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white rounded-lg hover:opacity-90 transition shadow-lg hover:shadow-xl"
-                  >
-                    <Shield className="w-4 h-4" />
-                    Admin
-                  </Link>
-                )}
+                {/* REMOVIDO: Botón de administración del menú principal */}
+                {/* Solo estará disponible en el menú desplegable del usuario */}
                 
                 {/* Menú de usuario */}
                 <div className="relative">
@@ -296,7 +288,7 @@ const Header = () => {
                       >
                         <MapPin className="w-5 h-5 text-green-500" /> Direcciones
                       </Link>
-                      {/* Panel de administración para admin/staff */}
+                      {/* Panel de administración SOLO en menú desplegable para admin/staff */}
                       {isAdminOrStaff() && (
                         <Link 
                           to="/admin" 
@@ -412,7 +404,7 @@ const Header = () => {
                       <MapPin className="w-5 h-5 text-green-500" /> Direcciones
                     </Link>
                     
-                    {/* Panel de administración para móvil */}
+                    {/* Panel de administración para móvil (solo en menú usuario) */}
                     {isAdminOrStaff() && (
                       <Link 
                         to="/admin" 
@@ -523,17 +515,8 @@ const Header = () => {
               </>
             )}
 
-            {/* Botón de administración para móvil (si es admin/staff) */}
-            {user && isAdminOrStaff() && !mobileUserMenuOpen && (
-              <Link 
-                to="/admin" 
-                className="px-4 py-3 text-lg font-medium text-white rounded-lg bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:opacity-90 transition flex items-center justify-center mt-4"
-                onClick={() => setMobileOpen(false)}
-              >
-                <Shield className="w-5 h-5 mr-2" />
-                <span>Panel de Administración</span>
-              </Link>
-            )}
+            {/* REMOVIDO: Botón de administración independiente en móvil */}
+            {/* Solo estará disponible dentro del menú de usuario */}
 
             {/* Tema */}
             <div className="flex justify-center mt-6 pt-6 border-t border-gray-200 dark:border-gray-800">

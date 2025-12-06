@@ -11,7 +11,7 @@
 
   --accent: #c084fc;
   --low-tone: #c084fc4d;
-  --menu-bg: rgba(255,255,255,0.9);
+  --menu-bg: rgba(255,255,255,0.95);
   --line: #111827;
 
   --slick-dot-bg: #d1d5db;         
@@ -29,7 +29,7 @@ html.dark {
   --accent: #a78bfa;
   --low-tone: #a78bfa5d;
 
-  --menu-bg: rgba(6,6,10,0.95);
+  --menu-bg: rgba(14, 14, 26, 0.95);
   --line: #f8fafc;
 
   --slick-dot-bg: #4b5563;      

@@ -1,7 +1,6 @@
 // src/pages/Checkout.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import BaseLayout from "../layouts/BaseLayout";
 import { useCart } from "../hooks/useCart";
 import { useAuth } from "../hooks/useAuth";
 import { useCheckout } from "../hooks/useCheckout";
@@ -218,7 +217,7 @@ const Checkout = () => {
 
   if (cart.length === 0) {
     return (
-      <BaseLayout title="Checkout">
+      <>
         <main className="mt-16 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto py-12">
           <div className="text-center py-20">
             <AlertCircle className="w-24 h-24 text-yellow-500 mx-auto mb-6" />
@@ -237,12 +236,12 @@ const Checkout = () => {
             </Link>
           </div>
         </main>
-      </BaseLayout>
+      </>
     );
   }
 
   return (
-    <BaseLayout title="Checkout - Proceder al Pago">
+    <>
       <main className="mt-16 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto py-12">
         {/* Breadcrumb */}
         <nav className="mb-8 text-sm text-[var(--nav-muted)]">
@@ -966,7 +965,7 @@ const Checkout = () => {
           </div>
         </form>
       </main>
-    </BaseLayout>
+    </>
   );
 };
 

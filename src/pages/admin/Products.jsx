@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import AdminLayout from '../../layouts/AdminLayout';
 import { useProducts } from '../../hooks/useProducts';
 import { useCategories } from '../../hooks/useCategories';
 import { useSubcategories } from '../../hooks/useSubcategories';
@@ -569,7 +568,7 @@ const AdminProducts = () => {
   };
 
   return (
-    <AdminLayout title="Gestión de Productos">
+    <>
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
@@ -1648,7 +1647,7 @@ const AdminProducts = () => {
           </div>
         </div>
       )}
-    </AdminLayout>
+    </>
   );
 };
 

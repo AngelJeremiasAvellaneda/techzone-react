@@ -1,5 +1,4 @@
 // src/pages/Desktops.jsx
-import BaseLayout from "../layouts/BaseLayout";
 import ProductsLayout from "../layouts/ProductsLayout";
 import { useProductsByCategory } from "../hooks/useProducts";
 import { useSubcategoriesByName } from "../hooks/useSubcategories";
@@ -11,7 +10,7 @@ export default function Desktops() {
 
   if (loading || loadingSubcats) {
     return (
-      <BaseLayout title="Desktops">
+      <>
         <section className="mt-16 px-6 border-b border-gray-500 pb-4">
           <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
             <h1 className="text-3xl md:text-4xl font-bold text-[var(--accent)]">
@@ -35,19 +34,19 @@ export default function Desktops() {
             <SkeletonProductList count={6} />
           </section>
         </main>
-      </BaseLayout>
+      </>
     );
   }
 
   if (error) {
     return (
-      <BaseLayout title="Desktops">
+      <>
         <div className="mt-16 px-6">
           <div className="bg-red-900/20 border border-red-500 rounded-lg p-4">
             <p className="text-red-400">Error: {error}</p>
           </div>
         </div>
-      </BaseLayout>
+      </>
     );
   }
 

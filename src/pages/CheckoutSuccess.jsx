@@ -1,7 +1,6 @@
 // src/pages/CheckoutSuccess.jsx
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import BaseLayout from '../layouts/BaseLayout';
 import { useCheckout } from '../hooks/useCheckout';
 import { 
   CheckCircle, Home, Package, Mail, Calendar, Download,
@@ -46,11 +45,11 @@ const CheckoutSuccess = () => {
 
   if (loading) {
     return (
-      <BaseLayout title="Cargando...">
+      <>
         <div className="flex items-center justify-center min-h-screen">
           <div className="w-10 h-10 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin"></div>
         </div>
-      </BaseLayout>
+      </>
     );
   }
 
@@ -80,7 +79,7 @@ const CheckoutSuccess = () => {
   };
 
   return (
-    <BaseLayout title="¡Pedido Confirmado!">
+    <>
       <main className="mt-16 px-4 md:px-6 lg:px-8 max-w-4xl mx-auto py-12">
         <div className="text-center">
           {/* Icono de éxito */}
@@ -296,7 +295,7 @@ const CheckoutSuccess = () => {
           </p>
         </div>
       </main>
-    </BaseLayout>
+    </>
   );
 };
 

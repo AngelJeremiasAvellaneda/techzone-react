@@ -2,7 +2,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
-import BaseLayout from '../layouts/BaseLayout';
 import { useOrders } from '../hooks/useOrders';
 import {
   User, Mail, Lock, Camera, Save, X,
@@ -532,7 +531,7 @@ const Account = () => {
   if (!user) return null;
 
   return (
-    <BaseLayout title="Mi Cuenta">
+    <>
       <div className="min-h-screen pt-24 pb-12 px-4">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
@@ -1031,7 +1030,7 @@ const Account = () => {
           formatDate={formatDate}
         />
       )}
-    </BaseLayout>
+    </>
   );
 };
 
