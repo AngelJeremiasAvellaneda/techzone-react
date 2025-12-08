@@ -36,7 +36,7 @@ const BaseLayout = ({ title = "TechZone" }) => {
   return (
     <div className="bg-[var(--page-bg)] text-[var(--text)] min-h-screen flex flex-col">
       <Header />
-      <main className="flex-grow pt-16">
+      <main className="flex-grow ">
         <Outlet />
       </main>
       <Footer />

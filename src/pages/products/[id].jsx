@@ -1,6 +1,5 @@
 import { useParams, Link } from "react-router-dom";
 import { useState, useEffect, useRef, useMemo } from "react";
-import BaseLayout from "../../layouts/BaseLayout";
 import { useProducts } from "../../hooks/useProducts";
 import { useCategories } from "../../hooks/useCategories";
 import { SkeletonProductDetail } from "../../components/SkeletonCard";
@@ -225,15 +224,12 @@ export default function ProductDetail() {
 
   if (isLoading) {
     return (
-      <BaseLayout title="Cargando...">
         <SkeletonProductDetail />
-      </BaseLayout>
     );
   }
 
   if (!product) {
     return (
-      <BaseLayout title="Producto no encontrado">
         <div className="mt-16 px-6 text-center py-12">
           <h1 className="text-2xl font-bold mb-4 text-[var(--text)]">
             Producto no encontrado
@@ -245,12 +241,11 @@ export default function ProductDetail() {
             Volver al inicio
           </Link>
         </div>
-      </BaseLayout>
     );
   }
 
   return (
-    <BaseLayout title={product.name}>
+    <>
       <main className="mt-16 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto" ref={containerRef}>
         {/* Breadcrumb */}
         <nav className="mb-6 text-sm text-[var(--nav-muted)]">
@@ -568,6 +563,6 @@ export default function ProductDetail() {
         isOpen={showZoomModal}
         onClose={() => setShowZoomModal(false)}
       />
-    </BaseLayout>
+    </>
   );
 }
