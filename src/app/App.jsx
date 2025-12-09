@@ -18,7 +18,6 @@ import NotFoundRedirect from "../components/NotFoundRedirect";
 import Home from "../pages/index";
 import About from "../pages/About";
 import Contact from "../pages/Contact";
-import News from "../pages/News";
 import Laptops from "../pages/Laptops";
 import Desktops from "../pages/Desktops";
 import Accessories from "../pages/Accessories";
@@ -74,7 +73,6 @@ function AppContent() {
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/news" element={<News />} />
           <Route path="/carrito" element={<Cart />} />
           
           {/* Rutas de Tienda */}

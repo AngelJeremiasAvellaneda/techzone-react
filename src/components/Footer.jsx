@@ -48,7 +48,6 @@ export default function Footer() {
             ))}
           </ul>
           <a href="/About" className="nav-link">Sobre Nosotros</a>
-          <a href="/News" className="nav-link">Novedades</a>
           <a href="/Contact" className="nav-link">Contacto</a>
         </div>
 

@@ -21,7 +21,8 @@ import {
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast } from 'react-hot-toast';
-let addressData = null;// Componente de Confirmación Bonito
+let addressData = null;
+
 const ConfirmationModal = ({ 
   isOpen, 
   onClose, 
@@ -241,6 +242,65 @@ const AdvancedFilters = ({ filters, setFilters, paymentMethods }) => (
 );
 
 const AdminOrders = () => {
+  const { user } = useAuth();
+  const userId = user?.id;
+
+  const [showCancelReasonModal, setShowCancelReasonModal] = useState(false);
+  const [cancelOrderId, setCancelOrderId] = useState(null);
+  const [selectedReason, setSelectedReason] = useState("");
+  const [customReason, setCustomReason] = useState("");
+
+  const CANCEL_REASONS = [
+    "Pago no realizado",
+    "Problemas de stock",
+    "Problemas de envío",
+    "Datos de dirección incorrectos",
+    "Solicitud del cliente",
+    "Otro (escribir motivo)"
+  ];
+
+  // Iniciar flujo de cancelación
+  const startCancelWithReason = (orderId) => {
+    setCancelOrderId(orderId);
+    setShowCancelReasonModal(true);
+  };
+
+  // Confirmar cancelación
+  const confirmCancelWithReason = async () => {
+    if (!selectedReason) {
+      return toast.error("Selecciona un motivo para cancelar.");
+    }
+
+    const finalReason =
+      selectedReason === "Otro (escribir motivo)"
+        ? customReason
+        : selectedReason;
+
+    // 1. Actualizar pedido
+    await updateOrderStatus(cancelOrderId, "cancelled");
+
+    // 2. Obtener al cliente del pedido
+    const { data: orderData } = await supabase
+      .from("orders")
+      .select("user_id")
+      .eq("id", cancelOrderId)
+      .single();
+
+    // 3. Guardar notificación al cliente
+    await supabase.from("notifications").insert({
+      user_id: orderData.user_id,
+      title: "Tu pedido fue cancelado",
+      message: `Motivo: ${finalReason}`,
+      type: "order"
+    });
+
+    toast.success("Pedido cancelado y cliente notificado.");
+
+    // Cerrar modal
+    setShowCancelReasonModal(false);
+    setSelectedReason("");
+    setCustomReason("");
+  };
   const [open, setOpen] = useState(null);
   const menuRef = useRef(null);
   const dotColors = {
@@ -576,6 +636,18 @@ const AdminOrders = () => {
   };
 
   const updateOrderStatus = async (orderId, newStatus) => {
+    if (selectedOrder?.status === "cancelled") {
+      toast.error("No puedes modificar un pedido que ya está cancelado.", {
+        icon: "⚠️",
+        style: {
+          borderRadius: "12px",
+          background: "#F59E0B",
+          color: "#fff",
+        },
+      });
+      return;
+    }
+
     setUpdatingStatus(orderId);
 
     try {
@@ -601,7 +673,6 @@ const AdminOrders = () => {
         prev && prev.id === orderId ? { ...prev, status: newStatus } : prev
       );
 
-      // Recarga estadísticas
       loadStats();
 
       toast.success(`Estado cambiado a "${getStatusInfo(newStatus).label}"`, {
@@ -627,13 +698,11 @@ const AdminOrders = () => {
 
     } finally {
       setUpdatingStatus(null);
-
-      // ✔ Cierra el modal de confirmación
       setConfirmationModal(prev => ({ ...prev, isOpen: false }));
     }
   };
 
-  const cancelOrder = async (orderId) => {
+const cancelOrder = async (orderId) => {
     showConfirmation(
       'Cancelar Pedido',
       '¿Estás seguro de que quieres cancelar este pedido? El cliente será notificado y el pedido cambiará a estado "Cancelado".',
@@ -1268,7 +1337,50 @@ const AdminOrders = () => {
     <div className="space-y-6">
       {/* Quick Actions Bar */}
       <QuickActionsBar onRefresh={loadOrders} onExport={exportOrders} loading={loading} />
-      
+      {showCancelReasonModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[999]">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-[420px]">
+            <h2 className="text-xl font-semibold mb-4">Motivo de cancelación</h2>
+
+            <select
+              className="w-full p-2 rounded-lg bg-gray-100 dark:bg-gray-800"
+              value={selectedReason}
+              onChange={(e) => setSelectedReason(e.target.value)}
+            >
+              <option value="">Selecciona un motivo</option>
+              {CANCEL_REASONS.map((reason) => (
+                <option key={reason} value={reason}>{reason}</option>
+              ))}
+            </select>
+
+            {selectedReason === "Otro (escribir motivo)" && (
+              <textarea
+                className="w-full mt-3 p-2 rounded-lg bg-gray-100 dark:bg-gray-800"
+                placeholder="Escribe el motivo..."
+                value={customReason}
+                onChange={(e) => setCustomReason(e.target.value)}
+              />
+            )}
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setShowCancelReasonModal(false)}
+                className="px-4 py-2 bg-gray-200 rounded-lg"
+              >
+                Cancelar
+              </button>
+
+              <button
+                onClick={confirmCancelWithReason}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard 
@@ -2004,15 +2116,57 @@ const AdminOrders = () => {
                           <span className="font-medium">Marcar como {status.label}</span>
                         </button>
                       ))}
-                    
+                    {showCancelReasonModal && (
+                      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[999]">
+                        <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-[420px]">
+                          <h2 className="text-xl font-semibold mb-4">Motivo de cancelación</h2>
+
+                          <select
+                            className="w-full p-2 rounded-lg bg-gray-100 dark:bg-gray-800"
+                            value={selectedReason}
+                            onChange={(e) => setSelectedReason(e.target.value)}
+                          >
+                            <option value="">Selecciona un motivo</option>
+                            {CANCEL_REASONS.map((reason) => (
+                              <option key={reason} value={reason}>{reason}</option>
+                            ))}
+                          </select>
+
+                          {selectedReason === "Otro (escribir motivo)" && (
+                            <textarea
+                              className="w-full mt-3 p-2 rounded-lg bg-gray-100 dark:bg-gray-800"
+                              placeholder="Escribe el motivo..."
+                              value={customReason}
+                              onChange={(e) => setCustomReason(e.target.value)}
+                            />
+                          )}
+
+                          <div className="flex justify-end gap-3 mt-6">
+                            <button
+                              onClick={() => setShowCancelReasonModal(false)}
+                              className="px-4 py-2 bg-gray-200 rounded-lg"
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              onClick={confirmCancelWithReason}
+                              className="px-4 py-2 bg-red-600 text-white rounded-lg"
+                            >
+                              Confirmar
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <button
-                      onClick={() => cancelOrder(selectedOrder.id)}
-                      className="flex items-center gap-3 px-6 py-3.5 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                      onClick={() => startCancelWithReason(selectedOrder.id)}
+                      className="flex items-center gap-3 px-6 py-3.5 bg-red-50 border-2 border-red-200 text-red-600 rounded-xl hover:bg-red-100 transition-colors"
                     >
                       <XCircle className="w-5 h-5" />
                       <span className="font-medium">Cancelar Pedido</span>
                     </button>
-                    
+
                     <button
                       onClick={() => deleteOrder(selectedOrder.id)}
                       className="flex items-center gap-3 px-6 py-3.5 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-xl hover:opacity-90 transition-opacity shadow-lg"

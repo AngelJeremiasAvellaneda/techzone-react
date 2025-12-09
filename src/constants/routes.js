@@ -3,7 +3,6 @@ export const ROUTES = {
   HOME: "/",
   ABOUT: "/about",
   CONTACT: "/contact",
-  NEWS: "/news",
   
   // ============ TIENDA - ESTRUCTURA PROFESIONAL ============
   SHOP: "/tienda",
