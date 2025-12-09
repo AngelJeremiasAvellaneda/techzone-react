@@ -12,10 +12,13 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.85.0",
     "firebase": "^12.6.0",
+    "jspdf": "^3.0.4",
+    "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.555.0",
     "mercadopago": "^2.11.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-hot-toast": "^2.6.0",
     "react-icons": "^5.5.0",
     "react-medium-image-zoom": "^5.4.0",
     "react-router-dom": "^7.9.6",

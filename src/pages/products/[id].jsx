@@ -1,4 +1,5 @@
-import { useParams, Link } from "react-router-dom";
+// src/pages/products/[id].jsx
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useProducts } from "../../hooks/useProducts";
 import { useCategories } from "../../hooks/useCategories";
@@ -9,6 +10,7 @@ import ProductReviews from "../../components/ProductReviews";
 import Slider from "react-slick";
 import { ShoppingCart, Heart, Share2, Expand, ChevronLeft, ChevronRight } from "lucide-react";
 import { useCartContext } from "../../context/CartContext.jsx";
+import { ROUTES } from "../../constants/routes";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
@@ -30,6 +32,13 @@ const SliderArrow = ({ direction, onClick }) => (
 
 export default function ProductDetail() {
   const { id } = useParams();
+  
+  // Extraer solo el ID numérico del parámetro
+  // Si la URL es: /tienda/producto/3-hp-pavilion-gaming
+  // Entonces id = "3-hp-pavilion-gaming" y numericId = "3"
+  const numericId = id ? id.split('-')[0] : null;
+  
+  const navigate = useNavigate();
   const sliderRef = useRef(null);
   const containerRef = useRef(null);
   
@@ -57,20 +66,27 @@ export default function ProductDetail() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Cargar producto
+  // Cargar producto - USAR numericId EN LUGAR DE id
   useEffect(() => {
-    if (!isLoading && id && allProducts.length) {
-      const found = allProducts.find(p => String(p.id) === String(id));
+    if (!isLoading && numericId && allProducts.length) {
+      console.log("Buscando producto con ID:", numericId); // Debug
+      console.log("Productos disponibles:", allProducts.map(p => ({id: p.id, name: p.name}))); // Debug
+      
+      // Buscar por ID numérico
+      const found = allProducts.find(p => String(p.id) === String(numericId));
+      
       if (found) {
+        console.log("Producto encontrado:", found); // Debug
         setProduct(found);
         setImagenSeleccionada(found.image);
         setCantidad(1);
         setTabActivo("descripcion");
       } else {
+        console.log("Producto NO encontrado con ID:", numericId); // Debug
         setProduct(null);
       }
     }
-  }, [id, allProducts, isLoading]);
+  }, [numericId, allProducts, isLoading]);
 
   // Productos relacionados
   const relacionados = useMemo(() => {
@@ -108,7 +124,7 @@ export default function ProductDetail() {
 
       return () => clearTimeout(timer);
     }
-  }, [relacionados.length, id, windowWidth]);
+  }, [relacionados.length, numericId, windowWidth]);
 
   const category = categories.find(c => c.id === product?.category_id);
 
@@ -232,10 +248,14 @@ export default function ProductDetail() {
     return (
         <div className="mt-16 px-6 text-center py-12">
           <h1 className="text-2xl font-bold mb-4 text-[var(--text)]">
-            Producto no encontrado
+            Producto no encontrado (ID: {numericId})
           </h1>
+          <div className="mb-4 text-sm text-gray-500">
+            <p>URL: {window.location.href}</p>
+            <p>ID extraído: {numericId}</p>
+          </div>
           <Link 
-            to="/" 
+            to={ROUTES.HOME}
             className="inline-block px-6 py-3 bg-[var(--accent)] hover:opacity-90 text-white rounded-lg transition-all font-medium"
           >
             Volver al inicio
@@ -249,13 +269,13 @@ export default function ProductDetail() {
       <main className="mt-16 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto" ref={containerRef}>
         {/* Breadcrumb */}
         <nav className="mb-6 text-sm text-[var(--nav-muted)]">
-          <Link to="/" className="hover:text-[var(--accent)] transition-colors">
+          <Link to={ROUTES.HOME} className="hover:text-[var(--accent)] transition-colors">
             Inicio
           </Link>
           <span className="mx-2">/</span>
           {category ? (
             <Link
-              to={`/${capitalize(category.name)}`}
+              to={ROUTES.PRODUCT_CATEGORY(category.name)}
               className="hover:text-[var(--accent)] transition-colors"
             >
               {capitalize(category.name)}
@@ -519,7 +539,8 @@ export default function ProductDetail() {
               <Slider ref={sliderRef} {...getSliderSettings()}>
                 {relacionados.map((p) => (
                   <div key={p.id} className="px-2 md:px-3">
-                    <Link to={`/products/${p.id}`} className="block">
+                    {/* En productos relacionados, usa la URL con slug */}
+                    <Link to={`/tienda/producto/${p.id}-${p.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`} className="block">
                       <div className="group bg-[var(--menu-bg)] rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-800 hover:border-[var(--accent)]/50">
                         <div className="aspect-square overflow-hidden bg-white dark:bg-gray-900 flex items-center justify-center">
                           <img

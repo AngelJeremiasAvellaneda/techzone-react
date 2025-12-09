@@ -1,8 +1,9 @@
 // src/pages/Account.jsx
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useOrders } from '../hooks/useOrders';
+import { ROUTES } from '../constants/routes';
 import {
   User, Mail, Lock, Camera, Save, X,
   Package, Heart, MapPin, CreditCard,
@@ -11,7 +12,7 @@ import {
   Edit2, Check, AlertCircle, Trash2,
   ChevronRight, Eye as EyeIcon, Truck, Clock,
   CheckCircle, XCircle, Search, Filter, Download,
-  MessageSquare, Star, RefreshCw
+  MessageSquare, Star, RefreshCw, Home
 } from 'lucide-react';
 
 // Componente para la lista de pedidos
@@ -348,9 +349,9 @@ const OrderDetailsModal = ({ order, onClose, statusInfo, paymentInfo, formatDate
 const Account = () => {
   const { user, profile, updateProfile, signOut } = useAuth();
   const navigate = useNavigate();
-  const { tab } = useParams();
+  const { tab = 'profile' } = useParams();
 
-  const [activeTab, setActiveTab] = useState(tab || 'profile');
+  const [activeTab, setActiveTab] = useState(tab);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
@@ -402,7 +403,7 @@ const Account = () => {
 
   // Redirigir al login si no hay usuario
   useEffect(() => {
-    if (!user) navigate('/login');
+    if (!user) navigate(ROUTES.LOGIN);
   }, [user, navigate]);
 
   // Calcular estadísticas
@@ -505,7 +506,7 @@ const Account = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/');
+    navigate(ROUTES.HOME);
   };
 
   const tabs = [
@@ -534,8 +535,23 @@ const Account = () => {
     <>
       <div className="min-h-screen pt-24 pb-12 px-4">
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
+          {/* Header con breadcrumb */}
           <div className="mb-8">
+            <nav className="mb-4 text-sm text-[var(--nav-muted)]">
+              <Link to={ROUTES.HOME} className="hover:text-[var(--accent)] transition-colors inline-flex items-center gap-1">
+                <Home className="w-3 h-3" />
+                Inicio
+              </Link>
+              <span className="mx-2">/</span>
+              <span className="text-[var(--text)]">Mi Cuenta</span>
+              {tab !== 'profile' && (
+                <>
+                  <span className="mx-2">/</span>
+                  <span className="text-[var(--text)] capitalize">{tab}</span>
+                </>
+              )}
+            </nav>
+            
             <h1 className="text-3xl md:text-4xl font-bold text-[var(--text)] mb-2">
               Mi Cuenta
             </h1>
@@ -602,20 +618,25 @@ const Account = () => {
                 
                 {/* Tabs */}
                 <nav className="space-y-1">
-                  {tabs.map((tab) => {
-                    const Icon = tab.icon;
+                  {tabs.map((tabItem) => {
+                    const Icon = tabItem.icon;
+                    const isActive = activeTab === tabItem.id;
                     return (
                       <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
+                        key={tabItem.id}
+                        onClick={() => {
+                          setActiveTab(tabItem.id);
+                          navigate(ROUTES.ACCOUNT_TAB(tabItem.id));
+                        }}
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                          activeTab === tab.id
+                          isActive
                             ? 'bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white shadow-lg'
                             : 'hover:bg-white/5 text-[var(--nav-text)]'
                         }`}
                       >
                         <Icon className="w-5 h-5" />
-                        <span className="text-sm font-medium">{tab.name}</span>
+                        <span className="text-sm font-medium">{tabItem.name}</span>
+                        {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
                       </button>
                     );
                   })}               
@@ -633,20 +654,24 @@ const Account = () => {
             {/* Tabs móviles */}
             <div className="lg:hidden mb-4">
               <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide">
-                {tabs.map((tab) => {
-                  const Icon = tab.icon;
+                {tabs.map((tabItem) => {
+                  const Icon = tabItem.icon;
+                  const isActive = activeTab === tabItem.id;
                   return (
                     <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
+                      key={tabItem.id}
+                      onClick={() => {
+                        setActiveTab(tabItem.id);
+                        navigate(ROUTES.ACCOUNT_TAB(tabItem.id));
+                      }}
                       className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all ${
-                        activeTab === tab.id
+                        isActive
                           ? 'bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white'
                           : 'bg-[var(--menu-bg)] text-[var(--nav-text)]'
                       }`}
                     >
                       <Icon className="w-4 h-4" />
-                      <span className="text-sm font-medium">{tab.name}</span>
+                      <span className="text-sm font-medium">{tabItem.name}</span>
                     </button>
                   );
                 })}
@@ -894,7 +919,7 @@ const Account = () => {
                               Aún no has realizado ningún pedido
                             </p>
                             <button 
-                              onClick={() => navigate('/')}
+                              onClick={() => navigate(ROUTES.SHOP)}
                               className="px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
                             >
                               Explorar productos
@@ -958,7 +983,6 @@ const Account = () => {
                 
                 {/* Los demás tabs (security, notifications, etc.) se mantienen igual */}
                 {activeTab === 'security' && (
-                  // ... (código existente para seguridad)
                   <div className="space-y-6">
                     <h2 className="text-2xl font-bold mb-6">Seguridad y Contraseña</h2>
                     {/* ... contenido de seguridad existente */}
@@ -966,7 +990,6 @@ const Account = () => {
                 )}
                 
                 {activeTab === 'notifications' && (
-                  // ... (código existente para notificaciones)
                   <div className="space-y-6">
                     <h2 className="text-2xl font-bold mb-6">Preferencias de Notificación</h2>
                     {/* ... contenido de notificaciones existente */}
@@ -975,10 +998,25 @@ const Account = () => {
                 
                 {activeTab === 'wishlist' && (
                   <div className="space-y-6">
-                    <h2 className="text-2xl font-bold mb-6">Lista de Deseos</h2>
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold">Lista de Deseos</h2>
+                      <button 
+                        onClick={() => navigate(ROUTES.SHOP)}
+                        className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
+                      >
+                        <Heart className="w-4 h-4" />
+                        Explorar productos
+                      </button>
+                    </div>
                     <div className="text-center py-12">
                       <Heart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                      <p className="text-lg text-[var(--nav-muted)]">Tu lista de deseos está vacía</p>
+                      <p className="text-lg text-[var(--nav-muted)] mb-4">Tu lista de deseos está vacía</p>
+                      <button 
+                        onClick={() => navigate(ROUTES.SHOP)}
+                        className="px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
+                      >
+                        Comenzar a agregar productos
+                      </button>
                     </div>
                   </div>
                 )}

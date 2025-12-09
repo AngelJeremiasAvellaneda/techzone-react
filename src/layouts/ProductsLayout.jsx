@@ -1,8 +1,11 @@
 import { useState, useMemo } from "react";
 import { FaFilter, FaBroom } from "react-icons/fa";
+import { Link } from "react-router-dom"; 
 import { useFilters } from "../components/useFilters";
 import FiltrosUI from "../components/FiltrosUI";
 import { useCartContext } from "../context/CartContext";
+import { ROUTES } from "../constants/routes"; 
+import { slugify } from '../utils/slugify'; 
 
 export default function ProductsLayout({ title, products, subcategories = [], category }) {
   const stableSubcategories = useMemo(() => subcategories || [], [subcategories?.length]);
@@ -24,6 +27,11 @@ export default function ProductsLayout({ title, products, subcategories = [], ca
   const incrementar = (id) => setCantidades(prev => ({ ...prev, [id]: (prev[id] || 1) + 1 }));
   const decrementar = (id) => setCantidades(prev => ({ ...prev, [id]: Math.max(1, (prev[id] || 1) - 1) }));
   const toggleMobileFilters = () => setMobileFiltersOpen(!mobileFiltersOpen);
+
+  // Función para generar URL del producto con slug
+  const getProductUrl = (product) => {
+    return `/tienda/producto/${product.id}-${slugify(product.name)}`;
+  };
 
   return (
     <>
@@ -63,7 +71,7 @@ export default function ProductsLayout({ title, products, subcategories = [], ca
             {...filtrosSeleccionados}
             precioMax={precios.precioMax}
             setPrecioMax={precios.setPrecioMax}
-            precioMaxReal={precios.precioMaxReal} // <- máximo dinámico
+            precioMaxReal={precios.precioMaxReal}
             subcategories={stableSubcategories}
             category={category}
             marcas={marcas}
@@ -102,7 +110,7 @@ export default function ProductsLayout({ title, products, subcategories = [], ca
                 {...filtrosSeleccionados}
                 precioMax={precios.precioMax}
                 setPrecioMax={precios.setPrecioMax}
-                precioMaxReal={precios.precioMaxReal} // <- máximo dinámico
+                precioMaxReal={precios.precioMaxReal}
                 subcategories={stableSubcategories}
                 category={category}
                 marcas={marcas}
@@ -122,24 +130,72 @@ export default function ProductsLayout({ title, products, subcategories = [], ca
           ) : (
             productosFiltrados.map((p) => {
               const cantidadActual = cantidades[p.id] ?? 1;
+              const productUrl = getProductUrl(p);
 
               return (
                 <div key={p.id} className="producto flex flex-col sm:flex-row items-center border-b border-gray-600 p-4 hover:bg-[var(--menu-bg)] transition rounded-lg">
-                  <a href={`/products/${p.id}`} className="w-full sm:w-48 flex-shrink-0">
-                    <img src={p.image} alt={p.name} className="w-full h-32 object-cover rounded" />
-                  </a>
+                  <Link 
+                    to={productUrl}
+                    className="w-full sm:w-48 flex-shrink-0"
+                  >
+                    <img 
+                      src={p.image} 
+                      alt={p.name} 
+                      className="w-full h-32 object-cover rounded hover:scale-105 transition-transform duration-300" 
+                    />
+                  </Link>
                   <div className="flex-1 sm:ml-4 flex flex-col justify-between w-full mt-2 sm:mt-0">
                     <div>
-                      <h3 className="text-[var(--accent)] font-semibold text-lg">{p.name}</h3>
-                      {p.description && <p className="text-[var(--text)] text-sm mt-1 line-clamp-2">{p.description}</p>}
+                      <Link 
+                        to={productUrl}
+                        className="text-[var(--accent)] font-semibold text-lg hover:underline"
+                      >
+                        {p.name}
+                      </Link>
+                      {p.description && (
+                        <p className="text-[var(--text)] text-sm mt-1 line-clamp-2">
+                          {p.description}
+                        </p>
+                      )}
+                      {/* Mostrar categoría y subcategoría si están disponibles */}
+                      {p.category && (
+                        <p className="text-xs text-[var(--nav-muted)] mt-1">
+                          {p.category}
+                          {p.subcategory && ` › ${p.subcategory}`}
+                        </p>
+                      )}
                     </div>
                     <div className="mt-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
-                      <span className="text-[var(--accent)] font-bold text-xl">S/. {Number(p.price).toLocaleString("es-PE")}</span>
+                      <div>
+                        <span className="text-[var(--accent)] font-bold text-xl">
+                          S/. {Number(p.price).toLocaleString("es-PE")}
+                        </span>
+                        {/* Mostrar stock si está disponible */}
+                        {p.stock !== undefined && p.stock < 10 && p.stock > 0 && (
+                          <p className="text-xs text-orange-500 mt-1">
+                            Solo {p.stock} disponibles
+                          </p>
+                        )}
+                      </div>
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
-                          <button onClick={() => decrementar(p.id)} className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 transition">-</button>
-                          <span className="px-3 font-medium text-[var(--text)]">{cantidadActual}</span>
-                          <button onClick={() => incrementar(p.id)} className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 transition">+</button>
+                          <button 
+                            onClick={() => decrementar(p.id)} 
+                            className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
+                            aria-label="Disminuir cantidad"
+                          >
+                            -
+                          </button>
+                          <span className="px-3 font-medium text-[var(--text)] min-w-[40px] text-center">
+                            {cantidadActual}
+                          </span>
+                          <button 
+                            onClick={() => incrementar(p.id)} 
+                            className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
+                            aria-label="Aumentar cantidad"
+                          >
+                            +
+                          </button>
                         </div>
                         <button
                           onClick={() => addToCart({
@@ -149,8 +205,11 @@ export default function ProductsLayout({ title, products, subcategories = [], ca
                             image: p.image,
                             quantity: cantidadActual,
                           })}
-                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded transition font-medium"
+                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded transition font-medium flex items-center gap-2"
                         >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
                           Agregar
                         </button>
                       </div>

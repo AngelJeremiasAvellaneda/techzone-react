@@ -9,18 +9,65 @@ import {
   User, LogIn, UserPlus, Settings, 
   Heart, Package, MapPin, Shield,
   LogOut, ChevronDown, Home, Info,
-  Bell, Gift, ArrowRight
+  Bell, Gift, ArrowRight, Search
 } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { ROUTES } from "../constants/routes";
 
-const products = [
-  { name: "Laptops", href: "/Laptops", icon: "" },
-  { name: "Desktops", href: "/Desktops", icon: "" },
-  { name: "Accesorios", href: "/Accessories", icon: "" },
+// Navegación principal con URLs profesionales
+const mainNav = [
+  { 
+    path: ROUTES.HOME, 
+    label: "Inicio", 
+    icon: Home, 
+    exact: true 
+  },
+  { 
+    path: ROUTES.SHOP, 
+    label: "Tienda", 
+    icon: Gift,
+    submenu: [
+      { 
+        path: ROUTES.SHOP, 
+        label: "Ver Todo", 
+        description: "Todos nuestros productos" 
+      },
+      { 
+        path: ROUTES.CATEGORY_LAPTOPS, 
+        label: "Laptops", 
+        description: "Portátiles de última generación" 
+      },
+      { 
+        path: ROUTES.CATEGORY_DESKTOPS, 
+        label: "Computadoras", 
+        description: "PCs de escritorio potentes" 
+      },
+      { 
+        path: ROUTES.CATEGORY_ACCESSORIES, 
+        label: "Accesorios", 
+        description: "Periféricos y más" 
+      },
+    ]
+  },
+  { 
+    path: ROUTES.ABOUT, 
+    label: "Nosotros", 
+    icon: Info 
+  },
+  { 
+    path: ROUTES.NEWS, 
+    label: "Noticias", 
+    icon: Bell 
+  },
+  { 
+    path: ROUTES.CONTACT, 
+    label: "Contacto", 
+    icon: null 
+  },
 ];
 
 const Header = () => {
-  const { cart, addToCart, totalItems, cartOpen, setCartOpen } = useCartContext();
+  const { totalItems, cartOpen, setCartOpen } = useCartContext();
   const { user, profile, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -31,6 +78,8 @@ const Header = () => {
   const [mobileSubmenuOpen, setMobileSubmenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mobileUserMenuOpen, setMobileUserMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
 
   const productBtnRef = useRef(null);
   const submenuRef = useRef(null);
@@ -76,6 +125,7 @@ const Header = () => {
     setMobileOpen(false);
     setMobileSubmenuOpen(false);
     setMobileUserMenuOpen(false);
+    setShowSearch(false);
   }, [location.pathname]);
 
   // Función helper para iniciales
@@ -90,15 +140,31 @@ const Header = () => {
   };
 
   // Verificar si la ruta actual está activa
-  const isActive = (path) => {
-    return location.pathname === path || location.pathname.startsWith(`${path}/`);
+  const isActive = (path, exact = false) => {
+    if (exact) {
+      return location.pathname === path;
+    }
+    return location.pathname.startsWith(path);
+  };
+
+  // Función para búsqueda profesional
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(ROUTES.buildSearchUrl({ 
+        q: searchQuery.trim(),
+        sort: 'relevance'
+      }));
+      setSearchQuery("");
+      setShowSearch(false);
+    }
   };
 
   const handleSignOut = async () => {
     await signOut();
     setUserMenuOpen(false);
     setMobileUserMenuOpen(false);
-    navigate("/");
+    navigate(ROUTES.HOME);
   };
 
   // Estilos CSS para las variables personalizadas
@@ -118,12 +184,43 @@ const Header = () => {
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16 relative z-50">
 
           {/* LOGO */}
-          <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500 bg-clip-text text-transparent hover:scale-105 transform transition-transform duration-300">
+          <Link to={ROUTES.HOME} className="text-2xl font-bold bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500 bg-clip-text text-transparent hover:scale-105 transform transition-transform duration-300">
             TechZone
           </Link>
 
-          {/* Mobile */}
+          {/* BÚSQUEDA PARA DESKTOP */}
+          <div className="hidden md:flex flex-1 max-w-xl mx-8">
+            <form onSubmit={handleSearch} className="w-full">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar productos, marcas, categorías..."
+                  className="w-full pl-10 pr-4 py-2 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  autoComplete="off"
+                />
+                <button 
+                  type="submit"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-purple-600 hover:text-purple-700"
+                >
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Mobile - Botones básicos */}
           <div className="flex items-center space-x-3 md:hidden">
+            {/* Botón de búsqueda móvil */}
+            <button 
+              onClick={() => setShowSearch(!showSearch)}
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+            >
+              <Search className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+            </button>
+
             {user ? (
               <button 
                 onClick={() => setMobileUserMenuOpen(prev => !prev)} 
@@ -139,90 +236,81 @@ const Header = () => {
                 )}
               </button>
             ) : (
-              <Link to="/login" className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+              <Link to={ROUTES.LOGIN} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
                 <User className="w-6 h-6 text-gray-700 dark:text-gray-300" />
               </Link>
             )}
 
-            <button onClick={() => setCartOpen(true)} className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+            <Link to={ROUTES.CART} className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
               <ShoppingCart className="w-6 h-6 text-gray-700 dark:text-gray-300" />
               {totalItems > 0 && (
                 <span className={`absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center ${animateBadge ? "scale-125" : "scale-100"} transition-transform`}>
                   {totalItems > 99 ? '99+' : totalItems}
                 </span>
               )}
-            </button>
+            </Link>
 
             <button id="hamburger-btn" onClick={() => setMobileOpen(!mobileOpen)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
               {mobileOpen ? <X className="w-6 h-6 text-gray-700 dark:text-gray-300" /> : <Menu className="w-6 h-6 text-gray-700 dark:text-gray-300" />}
             </button>
           </div>
 
-          {/* Desktop nav */}
-          <ul className="hidden md:flex space-x-8 font-medium items-center">
-            <li>
-              <Link to="/" className={`flex items-center gap-1 transition-colors ${isActive("/") ? "text-purple-500 font-bold" : "text-gray-700 dark:text-gray-300 hover:text-purple-500 dark:hover:text-purple-400"}`}>
-                <Home className="w-4 h-4" />
-                <span>Inicio</span>
-              </Link>
-            </li>
-            <li>
-              <Link to="/About" className={`flex items-center gap-1 transition-colors ${isActive("/about") ? "text-purple-500 font-bold" : "text-gray-700 dark:text-gray-300 hover:text-purple-500 dark:hover:text-purple-400"}`}>
-                <Info className="w-4 h-4" />
-                <span>Sobre Nosotros</span>
-              </Link>
-            </li>
-
-            {/* Productos */}
-            <li className="relative">
-              <button 
-                ref={productBtnRef} 
-                onClick={() => setSubmenuOpen(!submenuOpen)} 
-                className={`flex items-center gap-1 transition-colors ${products.some(p => isActive(p.href)) ? "text-purple-500 font-bold" : "text-gray-700 dark:text-gray-300 hover:text-purple-500 dark:hover:text-purple-400"}`}
-              >
-                <Gift className="w-4 h-4" />
-                <span>Productos</span>
-                <ChevronDown className={`w-4 h-4 transition-transform ${submenuOpen ? "rotate-180" : ""}`} />
-              </button>
-
-              <ul 
-                ref={submenuRef} 
-                className={`absolute left-0 mt-3 w-48 rounded-lg shadow-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 transform transition-all duration-300 z-50 ${submenuOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}
-              >
-                {products.map(item => (
-                  <li key={item.href}>
-                    <Link 
-                      to={item.href} 
-                      className={`block px-4 py-3 text-sm rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors ${isActive(item.href) ? "text-purple-600 dark:text-purple-400 font-medium bg-purple-50 dark:bg-purple-900/10" : "text-gray-700 dark:text-gray-300"}`}
-                      onClick={() => setSubmenuOpen(false)}
+          {/* Desktop nav - PROFESIONAL */}
+          <ul className="hidden md:flex space-x-6 font-medium items-center">
+            {mainNav.map((item) => {
+              const Icon = item.icon;
+              const isActiveItem = isActive(item.path, item.exact);
+              
+              return (
+                <li key={item.path} className="relative">
+                  {item.submenu ? (
+                    <div className="relative group">
+                      <button 
+                        ref={productBtnRef}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${isActiveItem ? "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"}`}
+                        onClick={() => setSubmenuOpen(!submenuOpen)}
+                      >
+                        {Icon && <Icon className="w-4 h-4" />}
+                        <span>{item.label}</span>
+                        <ChevronDown className={`w-4 h-4 transition-transform ${submenuOpen ? "rotate-180" : ""}`} />
+                      </button>
+                      <div 
+                        ref={submenuRef}
+                        className={`absolute left-0 mt-2 w-48 rounded-lg shadow-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 transform transition-all duration-300 z-50 ${submenuOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}
+                      >
+                        {item.submenu.map((subItem) => (
+                          <Link
+                            key={subItem.path}
+                            to={subItem.path}
+                            className="block px-4 py-3 text-sm hover:bg-purple-50 dark:hover:bg-purple-900/20 transition"
+                            onClick={() => setSubmenuOpen(false)}
+                          >
+                            <div className="font-medium">{subItem.label}</div>
+                            {subItem.description && (
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{subItem.description}</p>
+                            )}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <Link
+                      to={item.path}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${isActiveItem ? "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"}`}
                     >
-                      {item.name}
+                      {Icon && <Icon className="w-4 h-4" />}
+                      <span>{item.label}</span>
                     </Link>
-                  </li>
-                ))}
-              </ul>
-            </li>
-
-            <li>
-              <Link to="/News" className={`flex items-center gap-1 transition-colors ${isActive("/news") ? "text-purple-500 font-bold" : "text-gray-700 dark:text-gray-300 hover:text-purple-500 dark:hover:text-purple-400"}`}>
-                <Bell className="w-4 h-4" />
-                <span>Novedades</span>
-              </Link>
-            </li>
-            <li>
-              <Link to="/Contact" className={`transition-colors ${isActive("/contact") ? "text-purple-500 font-bold" : "text-gray-700 dark:text-gray-300 hover:text-purple-500 dark:hover:text-purple-400"}`}>
-                Contacto
-              </Link>
-            </li>
+                  )}
+                </li>
+              );
+            })}
           </ul>
 
-          {/* Desktop user, cart, theme */}
+          {/* Desktop user, cart, theme - PROFESIONAL */}
           <div className="hidden md:flex items-center space-x-3">
             {user ? (
               <>
-                {/* REMOVIDO: Botón de administración del menú principal */}
-                {/* Solo estará disponible en el menú desplegable del usuario */}
-                
                 {/* Menú de usuario */}
                 <div className="relative">
                   <button 
@@ -261,28 +349,28 @@ const Header = () => {
                     </div>
                     <div className="py-2">
                       <Link 
-                        to="/account/profile" 
+                        to={ROUTES.ACCOUNT} 
                         className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition"
                         onClick={() => setUserMenuOpen(false)}
                       >
                         <Settings className="w-5 h-5 text-purple-500" /> Mi Cuenta
                       </Link>
                       <Link 
-                        to="/account/orders" 
+                        to="/mi-cuenta/orders" 
                         className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition"
                         onClick={() => setUserMenuOpen(false)}
                       >
                         <Package className="w-5 h-5 text-blue-500" /> Mis Pedidos
                       </Link>
                       <Link 
-                        to="/account/wishlist" 
+                        to="/mi-cuenta/lista-deseos" 
                         className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition"
                         onClick={() => setUserMenuOpen(false)}
                       >
                         <Heart className="w-5 h-5 text-red-500" /> Lista de Deseos
                       </Link>
                       <Link 
-                        to="/account/addresses" 
+                        to="/mi-cuenta/direcciones" 
                         className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition"
                         onClick={() => setUserMenuOpen(false)}
                       >
@@ -291,7 +379,7 @@ const Header = () => {
                       {/* Panel de administración SOLO en menú desplegable para admin/staff */}
                       {isAdminOrStaff() && (
                         <Link 
-                          to="/admin" 
+                          to={ROUTES.ADMIN}
                           className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition border-t border-gray-200 dark:border-gray-700 mt-2 pt-2"
                           onClick={() => setUserMenuOpen(false)}
                         >
@@ -313,23 +401,23 @@ const Header = () => {
               </>
             ) : (
               <div className="flex items-center gap-2">
-                <Link to="/login" className="flex items-center gap-2 px-4 py-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                <Link to={ROUTES.LOGIN} className="flex items-center gap-2 px-4 py-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
                   <LogIn className="w-5 h-5" /> Iniciar Sesión
                 </Link>
-                <Link to="/register" className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white hover:opacity-90 transition">
+                <Link to={ROUTES.REGISTER} className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white hover:opacity-90 transition">
                   <UserPlus className="w-5 h-5" /> Registrarse
                 </Link>
               </div>
             )}
 
-            <button onClick={() => setCartOpen(true)} className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+            <Link to={ROUTES.CART} className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
               <ShoppingCart className="w-5 h-5 text-gray-700 dark:text-gray-300" />
               {totalItems > 0 && (
                 <span className={`absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center ${animateBadge ? "scale-125" : "scale-100"} transition-transform`}>
                   {totalItems > 99 ? '99+' : totalItems}
                 </span>
               )}
-            </button>
+            </Link>
 
             <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
               {theme === "dark" ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-indigo-400" />}
@@ -337,7 +425,30 @@ const Header = () => {
           </div>
         </nav>
 
-        {/* MOBILE MENU */}
+        {/* BÚSQUEDA MÓVIL */}
+        {showSearch && (
+          <div className="md:hidden p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+            <form onSubmit={handleSearch} className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar productos, marcas, categorías..."
+                className="w-full pl-10 pr-4 py-2 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                autoFocus
+              />
+              <button 
+                type="submit"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-600 hover:text-purple-700"
+              >
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* MOBILE MENU - PROFESIONAL */}
         <div 
           ref={mobileMenuRef} 
           className={`fixed top-16 right-0 w-full h-[calc(100vh-4rem)] bg-white dark:bg-gray-900 backdrop-blur-lg z-40 transition-transform duration-300 md:hidden ${mobileOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"}`}
@@ -376,38 +487,38 @@ const Header = () => {
                 {mobileUserMenuOpen && (
                   <div className="ml-4 mt-2 flex flex-col space-y-2">
                     <Link 
-                      to="/account/profile" 
+                      to={ROUTES.ACCOUNT} 
                       className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 rounded hover:bg-purple-50 dark:hover:bg-purple-900/20 transition"
                       onClick={() => setMobileOpen(false)}
                     >
                       <Settings className="w-5 h-5 text-purple-500" /> Mi Cuenta
                     </Link>
                     <Link 
-                      to="/account/orders" 
+                      to="/mi-cuenta/pedidos" 
                       className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 rounded hover:bg-purple-50 dark:hover:bg-purple-900/20 transition"
                       onClick={() => setMobileOpen(false)}
                     >
                       <Package className="w-5 h-5 text-blue-500" /> Mis Pedidos
                     </Link>
                     <Link 
-                      to="/account/wishlist" 
+                      to="/mi-cuenta/lista-deseos" 
                       className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 rounded hover:bg-purple-50 dark:hover:bg-purple-900/20 transition"
                       onClick={() => setMobileOpen(false)}
                     >
                       <Heart className="w-5 h-5 text-red-500" /> Lista de Deseos
                     </Link>
                     <Link 
-                      to="/account/addresses" 
+                      to="/mi-cuenta/direcciones" 
                       className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 rounded hover:bg-purple-50 dark:hover:bg-purple-900/20 transition"
                       onClick={() => setMobileOpen(false)}
                     >
                       <MapPin className="w-5 h-5 text-green-500" /> Direcciones
                     </Link>
                     
-                    {/* Panel de administración para móvil (solo en menú usuario) */}
+                    {/* Panel de administración para móvil */}
                     {isAdminOrStaff() && (
                       <Link 
-                        to="/admin" 
+                        to={ROUTES.ADMIN}
                         className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 rounded hover:bg-purple-50 dark:hover:bg-purple-900/20 transition"
                         onClick={() => setMobileOpen(false)}
                       >
@@ -427,77 +538,65 @@ const Header = () => {
               </div>
             )}
 
-            {/* Enlaces principales */}
-            <Link 
-              to="/" 
-              className="px-4 py-3 text-lg font-medium text-gray-900 dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-              onClick={() => setMobileOpen(false)}
-            >
-              <Home className="w-5 h-5 inline mr-2" />
-              <span>Inicio</span>
-            </Link>
-            <Link 
-              to="/About" 
-              className="px-4 py-3 text-lg font-medium text-gray-900 dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-              onClick={() => setMobileOpen(false)}
-            >
-              <Info className="w-5 h-5 inline mr-2" />
-              <span>Sobre Nosotros</span>
-            </Link>
+            {/* Enlaces principales - PROFESIONALES */}
+            {mainNav.map((item) => {
+              const Icon = item.icon;
+              
+              return (
+                <div key={item.path}>
+                  {item.submenu ? (
+                    <div className="flex flex-col">
+                      <button 
+                        className="flex items-center justify-between w-full px-4 py-3 text-lg font-medium text-gray-900 dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                        onClick={() => setMobileSubmenuOpen(!mobileSubmenuOpen)}
+                      >
+                        <span className="flex items-center">
+                          {Icon && <Icon className="w-5 h-5 mr-2" />}
+                          <span>{item.label}</span>
+                        </span>
+                        <ChevronDown className={`w-5 h-5 transition-transform ${mobileSubmenuOpen ? "rotate-180" : ""}`} />
+                      </button>
 
-            {/* Productos con submenú */}
-            <div className="flex flex-col">
-              <button 
-                className="px-4 py-3 text-lg font-medium text-gray-900 dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition flex justify-between items-center"
-                onClick={() => setMobileSubmenuOpen(prev => !prev)}
-              >
-                <span className="flex items-center">
-                  <Gift className="w-5 h-5 mr-2" />
-                  <span>Productos</span>
-                </span>
-                <ChevronDown className={`w-5 h-5 transition-transform ${mobileSubmenuOpen ? "rotate-180" : ""}`} />
-              </button>
-
-              {mobileSubmenuOpen && (
-                <div className="ml-6 mt-2 flex flex-col space-y-2">
-                  {products.map(p => (
+                      {mobileSubmenuOpen && (
+                        <div className="ml-6 mt-2 flex flex-col space-y-2">
+                          {item.submenu.map((subItem) => (
+                            <Link 
+                              key={subItem.path} 
+                              to={subItem.path} 
+                              className="px-4 py-2 text-gray-700 dark:text-gray-300 rounded hover:bg-purple-50 dark:hover:bg-purple-900/20 transition"
+                              onClick={() => {
+                                setMobileOpen(false);
+                                setMobileSubmenuOpen(false);
+                              }}
+                            >
+                              <div className="font-medium">{subItem.label}</div>
+                              {subItem.description && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{subItem.description}</p>
+                              )}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
                     <Link 
-                      key={p.href} 
-                      to={p.href} 
-                      className="px-4 py-2 text-gray-700 dark:text-gray-300 rounded hover:bg-purple-50 dark:hover:bg-purple-900/20 transition"
-                      onClick={() => {
-                        setMobileOpen(false);
-                        setMobileSubmenuOpen(false);
-                      }}
+                      to={item.path}
+                      className="flex items-center px-4 py-3 text-lg font-medium text-gray-900 dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                      onClick={() => setMobileOpen(false)}
                     >
-                      {p.name}
+                      {Icon && <Icon className="w-5 h-5 mr-2" />}
+                      <span>{item.label}</span>
                     </Link>
-                  ))}
+                  )}
                 </div>
-              )}
-            </div>
-
-            <Link 
-              to="/News" 
-              className="px-4 py-3 text-lg font-medium text-gray-900 dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-              onClick={() => setMobileOpen(false)}
-            >
-              <Bell className="w-5 h-5 inline mr-2" />
-              <span>Novedades</span>
-            </Link>
-            <Link 
-              to="/Contact" 
-              className="px-4 py-3 text-lg font-medium text-gray-900 dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-              onClick={() => setMobileOpen(false)}
-            >
-              <span>Contacto</span>
-            </Link>
+              );
+            })}
 
             {/* Si no está logueado, mostrar opciones de login */}
             {!user && (
               <>
                 <Link 
-                  to="/login" 
+                  to={ROUTES.LOGIN} 
                   className="px-4 py-3 text-lg font-medium text-gray-900 dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition flex items-center"
                   onClick={() => setMobileOpen(false)}
                 >
@@ -505,7 +604,7 @@ const Header = () => {
                   <span>Iniciar Sesión</span>
                 </Link>
                 <Link 
-                  to="/register" 
+                  to={ROUTES.REGISTER} 
                   className="px-4 py-3 text-lg font-medium text-white rounded-lg bg-gradient-to-r from-purple-500 to-fuchsia-500 hover:opacity-90 transition flex items-center justify-center"
                   onClick={() => setMobileOpen(false)}
                 >
@@ -514,9 +613,6 @@ const Header = () => {
                 </Link>
               </>
             )}
-
-            {/* REMOVIDO: Botón de administración independiente en móvil */}
-            {/* Solo estará disponible dentro del menú de usuario */}
 
             {/* Tema */}
             <div className="flex justify-center mt-6 pt-6 border-t border-gray-200 dark:border-gray-800">
