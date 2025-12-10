@@ -52,7 +52,9 @@ export default function FiltrosUI({
         >
           <option value="all">Todas</option>
           {marcas.map((m, idx) => (
-            <option key={`marca-${idx}`} value={m}>{m}</option>
+            <option key={m.id ?? m.name ?? idx} value={m.name}>
+              {m.name}
+            </option>
           ))}
         </select>
       </div>
@@ -68,7 +70,9 @@ export default function FiltrosUI({
           >
             <option value="all">Todas</option>
             {subcategories.map((s, idx) => (
-              <option key={`sub-${s.id || idx}`} value={s.id}>{s.name}</option>
+              <option key={s.id ?? s.name ?? idx} value={s.id}>
+                {s.name}
+              </option>
             ))}
           </select>
         </div>
@@ -88,9 +92,15 @@ export default function FiltrosUI({
               className="w-full p-2 rounded bg-[var(--menu-bg)]"
             >
               <option value="all">Todas</option>
-              {opciones.map((opt, idx) => (
-                <option key={`${key}-${opt}-${idx}`} value={opt}>{opt}</option>
-              ))}
+              {opciones.map((opt, idx) => {
+                const optValue = typeof opt === "object" ? opt.name : opt;
+                const optKey = typeof opt === "object" ? (opt.id ?? opt.name ?? idx) : (opt ?? idx);
+                return (
+                  <option key={`${key}-${optKey}-${idx}`} value={optValue}>
+                    {optValue}
+                  </option>
+                );
+              })}
             </select>
           </div>
         );
