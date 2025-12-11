@@ -10,7 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.85.0",
+    "@supabase/supabase-js": "^2.87.1",
+    "canvas-confetti": "^1.9.4",
+    "dotenv": "^17.2.3",
     "firebase": "^12.6.0",
     "jspdf": "^3.0.4",
     "jspdf-autotable": "^5.0.2",

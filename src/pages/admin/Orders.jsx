@@ -21,7 +21,6 @@ import {
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast } from 'react-hot-toast';
-let addressData = null;
 
 const ConfirmationModal = ({ 
   isOpen, 
@@ -277,7 +276,7 @@ const AdminOrders = () => {
         : selectedReason;
 
     // 1. Actualizar pedido
-    await updateOrderStatus(cancelOrderId, "cancelled");
+    await updateOrderStatus(cancelOrderId, "cancelled", finalReason);
 
     // 2. Obtener al cliente del pedido
     const { data: orderData } = await supabase
@@ -301,16 +300,10 @@ const AdminOrders = () => {
     setSelectedReason("");
     setCustomReason("");
   };
+
   const [open, setOpen] = useState(null);
   const menuRef = useRef(null);
-  const dotColors = {
-    green: "bg-green-500",
-    yellow: "bg-yellow-500",
-    blue: "bg-blue-500",
-    red: "bg-red-500",
-    orange: "bg-orange-500",
-    gray: "bg-gray-500",
-  };
+  
   useEffect(() => {
     function handleClickOutside(e) {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -320,6 +313,7 @@ const AdminOrders = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+  
   const { profile, isAdmin } = useAuth();
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
@@ -410,13 +404,15 @@ const AdminOrders = () => {
     filterOrders();
   }, [searchTerm, statusFilter, dateRange, filters, orders]);
 
+  // CORRECCIÓN: loadOrders actualizado para usar items de la tabla orders
   const loadOrders = async () => {
     setLoading(true);
     try {
       const from = (currentPage - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
 
-      const { data, error, count } = await supabase
+      // Traer pedidos con cliente y dirección
+      const { data: ordersData, error: ordersError, count } = await supabase
         .from('orders')
         .select(`
           *,
@@ -436,30 +432,34 @@ const AdminOrders = () => {
             phone,
             delivery_instructions,
             address_type
-          ),
-          order_items (
-            id,
-            quantity,
-            price,
-            product_id,
-            product:products (
-              id,
-              name,
-              description,
-              image,
-              category_id,
-              specs,
-              stock
-            )
           )
         `, { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(from, to);
 
-      if (error) throw error;
+      if (ordersError) throw ordersError;
 
-      setOrders(data || []);
+      // Parsear los items de cada pedido (almacenados en JSONB)
+      const ordersWithParsedItems = ordersData.map(order => {
+        let items = [];
+        if (order.items) {
+          try {
+            // Si items es string, parsear a JSON
+            items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+          } catch (e) {
+            console.error('Error parsing order items:', e);
+            items = [];
+          }
+        }
+        return {
+          ...order,
+          items: items
+        };
+      });
+
+      setOrders(ordersWithParsedItems);
       setTotalOrders(count || 0);
+
       toast.success('Pedidos cargados correctamente', {
         icon: '✅',
         style: {
@@ -468,6 +468,7 @@ const AdminOrders = () => {
           color: '#fff',
         }
       });
+
     } catch (err) {
       console.error("Error loading orders:", err.message);
       toast.error("Error al cargar pedidos", {
@@ -536,6 +537,7 @@ const AdminOrders = () => {
     }
   };
 
+  // CORRECCIÓN: filterOrders actualizado para usar items
   const filterOrders = () => {
     let filtered = [...orders];
 
@@ -547,8 +549,8 @@ const AdminOrders = () => {
         order.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.profiles?.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.tracking_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.order_items?.some(item =>
-          item.product?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+        order.items?.some(item =>
+          item.name?.toLowerCase().includes(searchTerm.toLowerCase())
         )
       );
     }
@@ -635,7 +637,8 @@ const AdminOrders = () => {
     });
   };
 
-  const updateOrderStatus = async (orderId, newStatus) => {
+  // CORRECCIÓN: updateOrderStatus actualizado para restaurar stock al cancelar
+  const updateOrderStatus = async (orderId, newStatus, reason = '') => {
     if (selectedOrder?.status === "cancelled") {
       toast.error("No puedes modificar un pedido que ya está cancelado.", {
         icon: "⚠️",
@@ -651,12 +654,26 @@ const AdminOrders = () => {
     setUpdatingStatus(orderId);
 
     try {
+      // Si estamos cancelando, restaurar stock primero
+      if (newStatus === 'cancelled') {
+        await restoreOrderStock(orderId);
+      }
+
+      const updateData = {
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      };
+
+      // Si es cancelación, agregar razón y timestamp
+      if (newStatus === 'cancelled') {
+        updateData.cancelled_at = new Date().toISOString();
+        updateData.cancellation_reason = reason || 'Cancelado por el administrador';
+        updateData.payment_status = 'cancelled';
+      }
+
       const { error } = await supabase
         .from('orders')
-        .update({
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', orderId);
 
       if (error) throw error;
@@ -664,13 +681,13 @@ const AdminOrders = () => {
       // Actualiza lista de pedidos
       setOrders(prev =>
         prev.map(o =>
-          o.id === orderId ? { ...o, status: newStatus } : o
+          o.id === orderId ? { ...o, ...updateData } : o
         )
       );
 
       // Actualiza modal si está abierto
       setSelectedOrder(prev =>
-        prev && prev.id === orderId ? { ...prev, status: newStatus } : prev
+        prev && prev.id === orderId ? { ...prev, ...updateData } : prev
       );
 
       loadStats();
@@ -702,11 +719,75 @@ const AdminOrders = () => {
     }
   };
 
-const cancelOrder = async (orderId) => {
+  // CORRECCIÓN: Función para restaurar stock
+  const restoreOrderStock = async (orderId) => {
+    try {
+      // Obtener el pedido
+      const { data: order, error } = await supabase
+        .from('orders')
+        .select('items')
+        .eq('id', orderId)
+        .single();
+      
+      if (error) throw error;
+
+      if (!order.items) return;
+
+      // Parsear items si es necesario
+      let items = order.items;
+      if (typeof items === 'string') {
+        try {
+          items = JSON.parse(items);
+        } catch (e) {
+          console.error('Error parsing items:', e);
+          return;
+        }
+      }
+
+      // Restaurar stock para cada producto
+      for (const item of items) {
+        if (!item.product_id || !item.quantity) continue;
+        
+        try {
+          // Obtener producto actual
+          const { data: product, error: prodError } = await supabase
+            .from('products')
+            .select('stock')
+            .eq('id', item.product_id)
+            .single();
+          
+          if (prodError) {
+            console.error(`Error obteniendo producto ${item.product_id}:`, prodError);
+            continue;
+          }
+
+          // Calcular nuevo stock
+          const newStock = (product.stock || 0) + (item.quantity || 0);
+
+          // Actualizar stock
+          await supabase
+            .from('products')
+            .update({ 
+              stock: newStock, 
+              updated_at: new Date().toISOString() 
+            })
+            .eq('id', item.product_id);
+
+          console.log(`Stock restaurado: Producto ${item.product_id}, +${item.quantity} unidades`);
+        } catch (itemError) {
+          console.error(`Error restaurando stock del producto ${item.product_id}:`, itemError);
+        }
+      }
+    } catch (error) {
+      console.error('Error restoring order stock:', error);
+    }
+  };
+
+  const cancelOrder = async (orderId) => {
     showConfirmation(
       'Cancelar Pedido',
-      '¿Estás seguro de que quieres cancelar este pedido? El cliente será notificado y el pedido cambiará a estado "Cancelado".',
-      () => updateOrderStatus(orderId, 'cancelled'),
+      '¿Estás seguro de que quieres cancelar este pedido? El stock será restaurado y el cliente será notificado.',
+      () => startCancelWithReason(orderId),
       'danger'
     );
   };
@@ -718,13 +799,8 @@ const cancelOrder = async (orderId) => {
       async () => {
         setConfirmationModal(prev => ({ ...prev, loading: true }));
         try {
-          // Primero eliminar los items del pedido
-          const { error: itemsError } = await supabase
-            .from('order_items')
-            .delete()
-            .eq('order_id', orderId);
-
-          if (itemsError) throw itemsError;
+          // Primero restaurar stock
+          await restoreOrderStock(orderId);
 
           // Luego eliminar el pedido
           const { error } = await supabase
@@ -770,6 +846,7 @@ const cancelOrder = async (orderId) => {
     );
   };
 
+  // CORRECCIÓN: viewOrderDetails actualizado para usar items
   const viewOrderDetails = async (orderId) => {
     try {
       const { data: orderData, error: orderError } = await supabase
@@ -799,29 +876,23 @@ const cancelOrder = async (orderId) => {
         if (!error) addressData = data;
       }
 
-      // ITEMS
-      const { data: itemsData } = await supabase
-        .from('order_items')
-        .select(`
-          *,
-          product:products (
-            id,
-            name,
-            description,
-            image,
-            category_id,
-            specs,
-            stock
-          )
-        `)
-        .eq('order_id', orderId);
+      // Parsear items si es necesario
+      let items = [];
+      if (orderData.items) {
+        try {
+          items = typeof orderData.items === 'string' ? JSON.parse(orderData.items) : orderData.items;
+        } catch (e) {
+          console.error('Error parsing items:', e);
+          items = [];
+        }
+      }
 
       // SET ORDER FINAL
       setSelectedOrder({
         ...orderData,
         profiles: userData || null,
         addresses: addressData,
-        order_items: itemsData || []
+        items: items
       });
 
       setShowDetails(true);
@@ -832,7 +903,7 @@ const cancelOrder = async (orderId) => {
     }
   };
 
-
+  // CORRECCIÓN: generateInvoice actualizado para usar items
   const generateInvoice = async (order) => {
     try {
       const doc = new jsPDF({
@@ -853,11 +924,11 @@ const cancelOrder = async (orderId) => {
       doc.setFont("helvetica", "normal");
 
       const companyInfo = [
-        "PedApp Store",
+        "TechZone Store",
         "RUC: 20745612391",
         "Av. Los Jardines 320 - Huancayo, Perú",
         "Tel: +51 987 654 321",
-        "Email: contacto@pedapp.com",
+        "Email: contacto@techzone.com",
       ];
 
       companyInfo.forEach((line, i) => {
@@ -907,12 +978,12 @@ const cancelOrder = async (orderId) => {
         doc.text(line, pageWidth / 2, 270 + i * 15);
       });
 
-      // Detalles del pedido
-      const tableData = order.order_items?.map((item) => [
-        item.product?.name || "Producto",
+      // Detalles del pedido - usar items
+      const tableData = order.items?.map((item) => [
+        item.name || "Producto",
         item.quantity,
-        `S/. ${item.price.toFixed(2)}`,
-        `S/. ${(item.price * item.quantity).toFixed(2)}`,
+        `S/. ${item.price?.toFixed(2) || "0.00"}`,
+        `S/. ${((item.price || 0) * (item.quantity || 0)).toFixed(2)}`,
       ]) || [];
 
       autoTable(doc, {
@@ -953,7 +1024,7 @@ const cancelOrder = async (orderId) => {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(16);
       doc.text("TOTAL:", pageWidth - 200, y + 85);
-      doc.text(`S/. ${order.total?.toFixed(2)}`, pageWidth - 110, y + 85);
+      doc.text(`S/. ${order.total?.toFixed(2) || "0.00"}`, pageWidth - 110, y + 85);
 
       // Información del pedido
       doc.setFontSize(11);
@@ -969,7 +1040,7 @@ const cancelOrder = async (orderId) => {
       // Footer
       doc.setFont("helvetica", "italic");
       doc.setFontSize(10);
-      doc.text("Gracias por su compra — PedApp Store", pageWidth / 2, 800, { align: "center" });
+      doc.text("Gracias por su compra — TechZone Store", pageWidth / 2, 800, { align: "center" });
 
       // Guardar PDF
       const fileName = `comprobante_pedido_${order.id}.pdf`;
@@ -1010,7 +1081,7 @@ const cancelOrder = async (orderId) => {
       'Impuesto': `S/. ${order.tax_amount?.toFixed(2) || '0.00'}`,
       'Descuento': `S/. ${order.discount_amount?.toFixed(2) || '0.00'}`,
       'Total': `S/. ${order.total?.toFixed(2)}`,
-      'Productos': order.order_items?.length || 0,
+      'Productos': order.items?.length || 0,
       'Dirección': order.addresses?.address || 'N/A',
       'Ciudad': order.addresses?.city || 'N/A',
       'Distrito': order.addresses?.district || 'N/A',
@@ -1052,18 +1123,38 @@ const cancelOrder = async (orderId) => {
       `¿Estás seguro de que quieres cambiar el estado de ${selectedOrders.length} pedido(s) seleccionados a "${orderStatuses.find(s => s.value === bulkAction)?.label}"?`,
       async () => {
         try {
+          // Si estamos cancelando pedidos, restaurar stock para cada uno
+          if (bulkAction === 'cancelled') {
+            for (const orderId of selectedOrders) {
+              await restoreOrderStock(orderId);
+            }
+          }
+
           const { error } = await supabase
             .from('orders')
             .update({ 
               status: bulkAction,
-              updated_at: new Date().toISOString()
+              updated_at: new Date().toISOString(),
+              ...(bulkAction === 'cancelled' ? {
+                cancelled_at: new Date().toISOString(),
+                cancellation_reason: 'Cancelado masivamente por el administrador',
+                payment_status: 'cancelled'
+              } : {})
             })
             .in('id', selectedOrders);
 
           if (error) throw error;
 
           setOrders(orders.map(order =>
-            selectedOrders.includes(order.id) ? { ...order, status: bulkAction } : order
+            selectedOrders.includes(order.id) ? { 
+              ...order, 
+              status: bulkAction,
+              ...(bulkAction === 'cancelled' ? {
+                cancelled_at: new Date().toISOString(),
+                cancellation_reason: 'Cancelado masivamente por el administrador',
+                payment_status: 'cancelled'
+              } : {})
+            } : order
           ));
 
           loadStats();
@@ -1168,13 +1259,14 @@ const cancelOrder = async (orderId) => {
 
   const totalPages = Math.ceil(totalOrders / itemsPerPage);
 
+  // CORRECCIÓN: renderOrderRow actualizado para usar items
   const renderOrderRow = (order) => {
     const statusInfo = getStatusInfo(order.status);
     const StatusIcon = statusInfo.icon;
     const paymentInfo = getPaymentMethodInfo(order.payment_method);
     const PaymentIcon = paymentInfo.icon;
     const customerName = order.profiles?.full_name || 'Cliente';
-    const productCount = order.order_items?.length || 0;
+    const productCount = order.items?.length || 0;
     const isExpanded = expandedOrderId === order.id;
 
     return (
@@ -1293,25 +1385,25 @@ const cancelOrder = async (orderId) => {
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
                   <h4 className="font-medium text-gray-900 dark:text-white mb-3">Productos del pedido:</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {order.order_items?.map((item, idx) => (
+                    {order.items?.map((item, idx) => (
                       <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
                         <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg overflow-hidden flex items-center justify-center">
-                          {item.product?.image ? (
-                            <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
+                          {item.image ? (
+                            <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                           ) : (
                             <Package className="w-6 h-6 text-white" />
                           )}
                         </div>
                         <div className="flex-1">
                           <div className="font-medium text-gray-900 dark:text-white truncate">
-                            {item.product?.name || 'Producto'}
+                            {item.name || 'Producto'}
                           </div>
                           <div className="text-sm text-gray-500 dark:text-gray-400">
-                            {item.quantity} × S/. {item.price?.toFixed(2)}
+                            {item.quantity} × S/. {item.price?.toFixed(2) || '0.00'}
                           </div>
                         </div>
                         <div className="font-bold text-gray-900 dark:text-white">
-                          S/. {(item.price * item.quantity).toFixed(2)}
+                          S/. {((item.price || 0) * (item.quantity || 0)).toFixed(2)}
                         </div>
                       </div>
                     ))}
@@ -1335,8 +1427,6 @@ const cancelOrder = async (orderId) => {
 
   return (
     <div className="space-y-6">
-      {/* Quick Actions Bar */}
-      <QuickActionsBar onRefresh={loadOrders} onExport={exportOrders} loading={loading} />
       {showCancelReasonModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[999]">
           <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-[420px]">
@@ -1380,6 +1470,9 @@ const cancelOrder = async (orderId) => {
           </div>
         </div>
       )}
+
+      {/* Quick Actions Bar */}
+      <QuickActionsBar onRefresh={loadOrders} onExport={exportOrders} loading={loading} />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -2001,7 +2094,7 @@ const cancelOrder = async (orderId) => {
                 <div className="mb-8">
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                     <Package className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-                    Productos ({selectedOrder.order_items?.length || 0})
+                    Productos ({selectedOrder.items?.length || 0})
                   </h3>
                   <div className="border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden">
                     <div className="overflow-x-auto">
@@ -2023,15 +2116,15 @@ const cancelOrder = async (orderId) => {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                          {selectedOrder.order_items?.map((item, index) => (
+                          {selectedOrder.items?.map((item, index) => (
                             <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-900/50">
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-4">
                                   <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl overflow-hidden flex-shrink-0 shadow-md">
-                                    {item.product?.image ? (
+                                    {item.image ? (
                                       <img
-                                        src={item.product.image}
-                                        alt={item.product?.name}
+                                        src={item.image}
+                                        alt={item.name}
                                         className="w-full h-full object-cover"
                                       />
                                     ) : (
@@ -2042,11 +2135,11 @@ const cancelOrder = async (orderId) => {
                                   </div>
                                   <div>
                                     <div className="font-bold text-gray-900 dark:text-white">
-                                      {item.product?.name || 'Producto no disponible'}
+                                      {item.name || 'Producto'}
                                     </div>
-                                    {item.product?.specs && (
+                                    {item.specifications && (
                                       <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                        {Object.entries(item.product.specs).slice(0, 2).map(([key, value]) => (
+                                        {Object.entries(item.specifications).slice(0, 2).map(([key, value]) => (
                                           <span key={key} className="inline-block bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded mr-2 mb-1">
                                             {key}: {value}
                                           </span>
@@ -2116,48 +2209,6 @@ const cancelOrder = async (orderId) => {
                           <span className="font-medium">Marcar como {status.label}</span>
                         </button>
                       ))}
-                    {showCancelReasonModal && (
-                      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[999]">
-                        <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-[420px]">
-                          <h2 className="text-xl font-semibold mb-4">Motivo de cancelación</h2>
-
-                          <select
-                            className="w-full p-2 rounded-lg bg-gray-100 dark:bg-gray-800"
-                            value={selectedReason}
-                            onChange={(e) => setSelectedReason(e.target.value)}
-                          >
-                            <option value="">Selecciona un motivo</option>
-                            {CANCEL_REASONS.map((reason) => (
-                              <option key={reason} value={reason}>{reason}</option>
-                            ))}
-                          </select>
-
-                          {selectedReason === "Otro (escribir motivo)" && (
-                            <textarea
-                              className="w-full mt-3 p-2 rounded-lg bg-gray-100 dark:bg-gray-800"
-                              placeholder="Escribe el motivo..."
-                              value={customReason}
-                              onChange={(e) => setCustomReason(e.target.value)}
-                            />
-                          )}
-
-                          <div className="flex justify-end gap-3 mt-6">
-                            <button
-                              onClick={() => setShowCancelReasonModal(false)}
-                              className="px-4 py-2 bg-gray-200 rounded-lg"
-                            >
-                              Cancelar
-                            </button>
-                            <button
-                              onClick={confirmCancelWithReason}
-                              className="px-4 py-2 bg-red-600 text-white rounded-lg"
-                            >
-                              Confirmar
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
 
                     <button
                       onClick={() => startCancelWithReason(selectedOrder.id)}
