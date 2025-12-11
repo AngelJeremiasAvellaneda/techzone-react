@@ -166,13 +166,13 @@ export const ROUTES = {
   
   // Helper para generar URLs canónicas (SEO)
   getCanonicalUrl: (pathname, search = '') => {
-    const baseUrl = 'https://techzone.com'; // Cambiar por tu dominio real
+    const baseUrl = 'https://techzone-react.vercel.app'; // Cambiar por tu dominio real
     return `${baseUrl}${pathname}${search}`;
   },
   
   // Helper para compartir productos
   getShareableProductUrl: (productId, productName = '') => {
-    const baseUrl = 'https://techzone.com';
+    const baseUrl = 'https://techzone-react.vercel.app';
     const productSlug = productName
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
